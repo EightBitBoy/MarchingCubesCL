@@ -32,14 +32,6 @@ namespace MC
 			}
 		};
 
-		void printError(cl_int error, string s)
-		{
-			if(error != CL_SUCCESS)
-			{
-				debugLog() << "ERROR: " << error << " " << s << endl;
-			}
-		}
-
 		Point3 interpolate(Point3 pointA, Point3 pointB, float valueA, float valueB, float isoValue)
 		{
 			Point3 result;
@@ -72,188 +64,44 @@ namespace MC
 			// add some test objects
 			polygonGroup = makeGraphics("polygonGroup");
 			polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
-
-			// int* foo = new int[100];
-			// delete[] foo;
  
 			try { 
-				// get the platforms
-				vector<cl::Platform> platforms;
-				cl::Platform::get(&platforms);
-				for(int i = 0; i < platforms.size(); i++)
-				{
-					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
-					debugLog() << "platform #" << i << " name: " << infoString << endl;
-					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
-					debugLog() << "platform #" << i << " version: " << infoString << endl;
-				}
-				debugLog() << "" << endl;
-
-				// select the default platform 0, create a context, use the GPU
-				cl_context_properties properties[3] = { 
-					CL_CONTEXT_PLATFORM, 
-					(cl_context_properties)(platforms[0])(), 
-					0 
-				};
-				cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
-				printError(error, "context");
- 
-				// get the devices
-				vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-				if(devices.size() == 0)
-				{
-					throw runtime_error("No devices found!");
-				}
-				for(int i = 0; i < devices.size(); i++)
-				{
-					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
-					debugLog() << "device #"<< i << " name: " << infoString << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
-					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
-					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
-				}
-				debugLog() << "" << endl;
-				// create the command queue, use the first device
-				cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
- 
-				ifstream file("code.cl");
-				string prog(istreambuf_iterator<char>(file), (istreambuf_iterator<char>()));
-
-
-
-
-
-				// get the kernel source code
-				string s = getKernelSource();
-				cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
-
-				// Make program of the source code in the context
-				cl::Program program = cl::Program(context, source);
- 
-				// Build program for these specific devices
-				error = program.build(devices);
-				string f;
-				program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &f);
-				debugLog() << f << endl;
-				printError(error, "kernel");
-				// Make kernel
-				cl::Kernel kernel(program, "vector_add");
-
-
-				////////////////////////////////////////
-				////////////////////////////////////////
-
-				// prepare the data
 				auto evaluator = field->makeEvaluator();
 				auto& points = grid->parent().points();
 
-				debugLog() << "cells: " << grid->numCells() << endl;
-				//const size_t numberOfCells = grid->numCells(); // TODO use the correct number
-				//const size_t numberOfCells = 100;
-				const size_t numberOfCells = numberOfUsedCells;
-				const int numberOfCellPoints = 8;
-				const size_t numberOfValues = numberOfCells * numberOfCellPoints;
-				float *values = new float[numberOfCells];
+				size_t numCells = grid->numCells();
+				size_t numCellPoints = 8;
+				size_t numValues = numCells * numCellPoints;
+				int time = 0;
 
-				//float values[numberOfValues];
-				double time = 0;
+				// put all scalar values into an array
+				float * values = new float[numValues];
 
-				for(Progress i(*this, "working, size", numberOfCells); i < numberOfCells; ++i)
+				for(Progress i(*this, "loading data", numCells); i < numCells; ++i)
 				{
 					Cell cell = grid->cell(i);
-					for(size_t j = 0; j < numberOfCellPoints; ++j)
+					for(size_t j = 0; j < numCellPoints; ++j)
 					{
 						Point3 p = points[cell.index(j)];
-						if(evaluator->reset(points[cell.index(j)], time))
+						if(evaluator->reset(p, time))
 						{
-							values[(i * numberOfCellPoints) + j] = evaluator->value()();
+							values[(i * numCellPoints) + j] = evaluator->value()();
 						}
 						else
 						{
-							values[(i * numberOfCellPoints) + j] = 0;
+							values[(i * numCellPoints) + j] = 0;
 						}
 					}
 				}
 				
-				////////////////////////////////////////
-				////////////////////////////////////////
+				// free memory
+				delete[] values;
 
 
-				float valuesTest[numberOfValues];
-				for(int i = 0; i < numberOfValues; i++)
-				{
-					valuesTest[i] = 99.8877;
-				}
 
-				// Create memory buffers
-				cl::Buffer bufferA = cl::Buffer(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
-				cl::Buffer bufferB = cl::Buffer(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
-				cl::Buffer bufferC = cl::Buffer(context, CL_MEM_WRITE_ONLY, LIST_SIZE * sizeof(int));
 
-				cl::Buffer bufferIsoValue = cl::Buffer(context, CL_MEM_READ_ONLY, 1 * sizeof(float));
-				cl::Buffer bufferEdgeList = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
-				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numberOfValues * sizeof(float));
-				cl::Buffer bufferOutputInterpolatedValues = cl::Buffer(context, CL_MEM_WRITE_ONLY, numberOfCells * 12 * sizeof(float));
-				cl::Buffer bufferOutputCubeIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numberOfCells * sizeof(int));
- 
-				// Copy lists A and B to the memory buffers
-				queue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
-				queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, LIST_SIZE * sizeof(int), B);
 
-				queue.enqueueWriteBuffer(bufferIsoValue, CL_TRUE, 0, 1 * sizeof(float), &isoValue);
-				queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numberOfValues * sizeof(float), valuesTest);
-				queue.enqueueWriteBuffer(bufferEdgeList, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
- 
-
-				// Set arguments to kernel
-				kernel.setArg(0, bufferA);
-				kernel.setArg(1, bufferB);
-				kernel.setArg(2, bufferC);
-
-				error = kernel.setArg(3, isoValue);
-				printError(error, "isoValue");
-				kernel.setArg(4, bufferEdgeList);
-				kernel.setArg(5, bufferValues);
-				kernel.setArg(6, bufferOutputInterpolatedValues);
-				kernel.setArg(7, bufferOutputCubeIndices);
- 
-				// Run the kernel on specific ND range
-				cl::NDRange global(LIST_SIZE); // TODO use the number of cells
-				cl::NDRange local(1);
-				queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
- 
-				// Read buffer C into a local list
-
-				int C[LIST_SIZE];
-				queue.enqueueReadBuffer(bufferC, CL_TRUE, 0, LIST_SIZE * sizeof(int), C);
-				for(int i = 0; i < LIST_SIZE; i++)
-				{
-					//debugLog() << A[i] << " + " << B[i] << " = " << C[i] << endl;
-				}
-
-				float interpolatedValues[numberOfCells * 12];
-				queue.enqueueReadBuffer(bufferOutputInterpolatedValues, CL_TRUE, 0, numberOfCells * 12 * sizeof(float), interpolatedValues);
-				for(int i = 0; i < numberOfValues; i++)
-				{
-					//debugLog() << "out: " << interpolatedValues[i] << endl;
-				}
-
-				int cubeIndices[numberOfCells];
-				queue.enqueueReadBuffer(bufferOutputCubeIndices, CL_TRUE, 0, numberOfCells * sizeof(int), cubeIndices);
-				for(int i = 0; i < numberOfCells; i++)
-				{
-					//debugLog() << cubeIndices[i] << endl;
-				}
-
-				
-				// render the triangles
+				/*
 				for(Progress i(*this, "working, size", numberOfCells); i < numberOfCells; ++i)
 				{
 					debugLog() << "working" << endl;
@@ -307,6 +155,7 @@ namespace MC
 						polygonGroup->primitive().add(Primitive::POLYGON).setColor(color).setVertices(polygonPoints);
 					}
 				}
+				*/
 			}
 			catch(...)
 			{
