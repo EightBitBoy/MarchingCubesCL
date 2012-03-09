@@ -27,6 +27,7 @@ namespace MC
 			{
 				add<const TensorField<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
+				add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
 			}
 		};
 
@@ -47,6 +48,7 @@ namespace MC
 			// get the data
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
+			const bool useOpenCL = parameters.get<bool>("use OpenCL");
 
 			if(field == false)
 			{
@@ -60,25 +62,40 @@ namespace MC
 			auto evaluator = field->makeEvaluator();
 			auto& points = grid->parent().points();
 
-			size_t numCells = grid->numCells();
-			size_t numCellPoints = 8;
-			size_t numValues = numCells * numCellPoints;
-			int time = 0;
-
-
-			for(Progress i(*this, "loading data", numCells); i < numCells; ++i)
+			// ==================
+			// CPU implementation
+			// ==================
+			if(useOpenCL == false)
 			{
-				Cell cell = grid->cell(i);
-				for(size_t j = 0; j < cell.numPoints(); ++j)
+
+				size_t numCells = grid->numCells();
+				size_t numCellPoints = 8;
+				size_t numValues = numCells * numCellPoints;
+				int time = 0;
+
+
+				for(Progress i(*this, "loading data", numCells); i < numCells; ++i)
 				{
-					Point3 p = points[cell.index(j)];
-					if(evaluator->reset(p, time))
+					Cell cell = grid->cell(i);
+					for(size_t j = 0; j < cell.numPoints(); ++j)
 					{
-					}
-					else
-					{
+						Point3 p = points[cell.index(j)];
+						if(evaluator->reset(p, time))
+						{
+						}
+						else
+						{
+						}
 					}
 				}
+			}
+
+			// =====================
+			// OpenCL implementation
+			// =====================
+			if(useOpenCL == true)
+			{
+				throw runtime_error("OpenCL algorithm not yet implemented!");
 			}
 		}
 	};
