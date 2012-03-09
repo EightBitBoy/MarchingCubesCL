@@ -73,11 +73,12 @@ namespace MC
 				size_t numValues = numCells * numCellPoints;
 				int time = 0;
 
-
-				for(Progress i(*this, "loading data", numCells); i < numCells; ++i)
+				// load all scalar values into an array
+				float* values = new float[numValues];
+				for(Progress i(*this, "load data", numCells); i < numCells; ++i)
 				{
 					Cell cell = grid->cell(i);
-					for(size_t j = 0; j < cell.numPoints(); ++j)
+					for(size_t j = 0; j < numCellPoints; ++j)
 					{
 						Point3 p = points[cell.index(j)];
 						if(evaluator->reset(p, time))
@@ -88,6 +89,20 @@ namespace MC
 						}
 					}
 				}
+
+				// get the cube indices
+				int* indices = new int[numCells];
+				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
+				{
+					for(size_t j = 0; j < numCellPoints; ++j)
+					{
+						
+					}
+				}
+
+				// free memory
+				delete[] values;
+				delete[] indices;
 			}
 
 			// =====================
