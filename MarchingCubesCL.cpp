@@ -28,6 +28,7 @@ namespace MC
 				add<const TensorField<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
 				add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
+				add<float>("iso value", "", 1.0);
 			}
 		};
 
@@ -49,6 +50,7 @@ namespace MC
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			const bool useOpenCL = parameters.get<bool>("use OpenCL");
+			const float isoValue = parameters.get<float>("iso value");
 
 			if(field == false)
 			{
@@ -80,6 +82,7 @@ namespace MC
 					Cell cell = grid->cell(i);
 					for(size_t j = 0; j < numCellPoints; ++j)
 					{
+						// TODO USE THE CORRECT VALUES
 						Point3 p = points[cell.index(j)];
 						if(evaluator->reset(p, time))
 						{
@@ -87,18 +90,36 @@ namespace MC
 						else
 						{
 						}
+						values[(i * numCellPoints) + j] = p[0];
 					}
 				}
+				debugLog() << "loading finished" << endl;
 
 				// get the cube indices
 				int* indices = new int[numCells];
 				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
 				{
-					for(size_t j = 0; j < numCellPoints; ++j)
-					{
-						
-					}
+					int index = 0;
+
+					if (values[(i * numCellPoints) + 0] < isoValue) index |=   1;
+					if (values[(i * numCellPoints) + 1] < isoValue) index |=   2;
+					if (values[(i * numCellPoints) + 2] < isoValue) index |=   4;
+					if (values[(i * numCellPoints) + 3] < isoValue) index |=   8;
+					if (values[(i * numCellPoints) + 4] < isoValue) index |=  16;
+					if (values[(i * numCellPoints) + 5] < isoValue) index |=  32;
+					if (values[(i * numCellPoints) + 6] < isoValue) index |=  64;
+					if (values[(i * numCellPoints) + 7] < isoValue) index |= 128;
+
+					indices[i / numCellPoints] = index;
 				}
+				debugLog() << "indexing finished" << endl;
+
+				// calculate and draw polygons
+				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
+				{
+
+				}
+				debugLog() << "polygonizing finished" << endl;
 
 				// free memory
 				delete[] values;
