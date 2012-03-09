@@ -28,34 +28,8 @@ namespace MC
 				add<const TensorField<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
 				add<float>("isoValue", "the iso value used by the Marching Cubes algorithm", 0.00080);
-				add<int>("numberOfUsedCells", "", 100);
 				add<Color>("color", "", Color(0.75, 0.0, 0.0));
 			}
-		};
-
-		struct MyWindow
-		{
-
-		  DockWindow mWindow;
-		  BoxLayout mLayout;
-		  LineEdit mText;
-		  PushButton mButton;
-		  MarchingCubes& mAlgo;
-
-		  MyWindow(MainWindow& mainWindow, MarchingCubes& algo)
-			: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
-			  mLayout(mWindow.getWidgetHolder(), false),
-			  mText(mLayout.addWidgetHolder()),
-			  mButton(mLayout.addWidgetHolder(), "Send", bind(&MyWindow::send, this)),
-			  mAlgo(algo)
-		  {
-		  }
-
-		  void send()
-		  {
-			//mAlgo.scheduleJob(bind(&MarchingCubes::printError, &mAlgo, mText.get()));
-		  }
-
 		};
 
 		void printError(cl_int error, string s)
@@ -80,12 +54,10 @@ namespace MC
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters)
 		{
-			// foo
 			// get the data
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			const float isoValue = parameters.get<float>("isoValue");
-			const int numberOfUsedCells = parameters.get<int>("numberOfUsedCells");
 			const Color color = parameters.get<Color>("color");
 
 			if(field == false)
@@ -99,21 +71,10 @@ namespace MC
 
 			// add some test objects
 			polygonGroup = makeGraphics("polygonGroup");
-			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
+			polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
-			// some useful variables
-			cl_int error = CL_SUCCESS;
-			cl_ulong infoNumber = 0;
-			string infoString = "";
-
-			// Create the two input vectors
-			const int LIST_SIZE = 10;
-			int *A = new int[LIST_SIZE]; 
-			int *B = new int[LIST_SIZE];
-			for(int i = 0; i < LIST_SIZE; i++) {
-				A[i] = i;
-				B[i] = LIST_SIZE - i;
-			}
+			// int* foo = new int[100];
+			// delete[] foo;
  
 			try { 
 				// get the platforms
