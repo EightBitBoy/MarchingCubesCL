@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 2.6.3)
+project(MarchingCubesCL)
+
+set(CMAKE_CXX_FLAGS "-std=c++0x")
+find_path(FANTOM_INCLUDE_DIR fantom/algorithm.hpp "D:/FAnToM2/mingw/include")
+find_library(FANTOM_LIBRARY fantom-lib "D:/FAnToM2/mingw/lib")
+include_directories("${FANTOM_INCLUDE_DIR}")
+file(GLOB _SRC *.cpp)
+add_library(MarchingCubesCL MODULE ${_SRC})
+target_link_libraries(MarchingCubesCL ${FANTOM_LIBRARY})
+install(TARGETS MarchingCubesCL LIBRARY DESTINATION "D:/FAnToM2/mingw/lib/fantom-plugins")
