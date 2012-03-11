@@ -76,7 +76,7 @@ namespace MC
 			{
 				// TODO use this!
 				//size_t numCells = grid->numCells();
-				size_t numCells = 6000;
+				size_t numCells = 1000;
 				const size_t numCellPoints = 8;
 				size_t numValues = numCells * numCellPoints;
 				int time = 0;
@@ -121,6 +121,7 @@ namespace MC
 				}
 				debugLog() << "indexing finished" << endl;
 
+
 				// calculate and draw polygons
 				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
 				{
@@ -134,8 +135,8 @@ namespace MC
 						cellValues[j] = values[(i * numCellPoints) +j];
 					}
 
-
-					int indexValue = edgeTable[indices[i]];
+					int index = indices[i];
+					int indexValue = edgeTable[index];
 					Point3 vertices[12];
 
 					if(indexValue == 0)
@@ -166,20 +167,17 @@ namespace MC
 						vertices[11] = interpolate(isoValue, cellPoints[3], cellPoints[7], cellValues[3], cellValues[7]);
 
 
-					for(int j = 0; triTable[indexValue][j] != -1; j = j + 3)
+					for(int j = 0; triTable[index][j] != -1; j = j+3)
 					{
-						/*
 						vector<Point3> triPoints;
+						triPoints.push_back(vertices[triTable[index][j    ]]);
+						triPoints.push_back(vertices[triTable[index][j + 1]]);
+						triPoints.push_back(vertices[triTable[index][j + 0]]);
 
-						triPoints.push_back(vertices[triTable[indexValue][j    ]]);
-						triPoints.push_back(vertices[triTable[indexValue][j + 1]]);
-						triPoints.push_back(vertices[triTable[indexValue][j + 2]]);
-
-						polygonGroup->primitive().add(Primitive::POLYGON).setColor(color).setVertices(triPoints);
-						*/
+						polygonGroup->primitive().add(Primitive::LINE_LOOP).setColor(color).setVertices(triPoints);
 					}
 				}
-				debugLog() << "polygonizing finished" << endl;
+				debugLog() << "polygonization finished" << endl;
 
 				// free memory
 				delete[] values;
