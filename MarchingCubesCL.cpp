@@ -172,9 +172,9 @@ namespace MC
 						vector<Point3> triPoints;
 						triPoints.push_back(vertices[triTable[index][j    ]]);
 						triPoints.push_back(vertices[triTable[index][j + 1]]);
-						triPoints.push_back(vertices[triTable[index][j + 0]]);
+						triPoints.push_back(vertices[triTable[index][j + 2]]);
 
-						polygonGroup->primitive().add(Primitive::LINE_LOOP).setColor(color).setVertices(triPoints);
+						polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
 					}
 				}
 				debugLog() << "polygonization finished" << endl;
