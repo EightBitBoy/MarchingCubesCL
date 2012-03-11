@@ -32,16 +32,10 @@ namespace MC
 			}
 		};
 
-		Point3 interpolate(Point3 pointA, Point3 pointB, float valueA, float valueB, float isoValue)
+		Point3 interpolate(float isoValue, Point3 pointA, Point3 pointB, float valueA, float valueB)
 		{
-			Point3 result;
-
 			float factor;
-			factor = (isoValue - valueA) / (valueB - valueA);
-			result[0] = pointA[0] + factor * (pointB[0] - pointA[0]);
-			result[1] = pointA[1] + factor * (pointB[1] - pointA[1]);
-			result[2] = pointA[2] + factor * (pointB[2] - pointA[2]);
-			return result;
+			Point3 result;
 		}
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters)
@@ -69,8 +63,9 @@ namespace MC
 			// ==================
 			if(useOpenCL == false)
 			{
-
-				size_t numCells = grid->numCells();
+				// TODO use this!
+				//size_t numCells = grid->numCells();
+				size_t numCells = 6000;
 				size_t numCellPoints = 8;
 				size_t numValues = numCells * numCellPoints;
 				int time = 0;
@@ -89,8 +84,9 @@ namespace MC
 						}
 						else
 						{
+							
 						}
-						values[(i * numCellPoints) + j] = p[0];
+						values[(i * numCellPoints) + j] = (float)(rand() % 10);
 					}
 				}
 				debugLog() << "loading finished" << endl;
@@ -110,14 +106,20 @@ namespace MC
 					if (values[(i * numCellPoints) + 6] < isoValue) index |=  64;
 					if (values[(i * numCellPoints) + 7] < isoValue) index |= 128;
 
-					indices[i / numCellPoints] = index;
+					indices[i] = index;
+					debugLog() << index << endl;
 				}
 				debugLog() << "indexing finished" << endl;
 
 				// calculate and draw polygons
 				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
 				{
-
+					int indexValue = edgeTable[indices[i]];
+					if(indexValue == 0)
+						continue;
+					
+					//if(indexValue & 1)
+					//	interpolate();
 				}
 				debugLog() << "polygonizing finished" << endl;
 
