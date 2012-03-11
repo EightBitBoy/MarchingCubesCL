@@ -268,7 +268,46 @@ namespace MC
 					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
 				}
 
+				cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
+
+				// prepare the kernel
+				string s = getKernelSource();
+				cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
+
+				cl::Program program = cl::Program(context, source);
+				error = program.build(devices);
+				printError(error, "build");
+
+				program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
+				debugLog() << "build info: " << infoString << endl;
+
+				cl::Kernel kernel(program, "marchingCubes");
+
+				// prepare buffers
+				cl::Buffer out = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+
+				kernel.setArg(0, out);
+
+
+				// run the kernel
+				cl::NDRange global(numCells); // TODO use the number of cells
+				cl::NDRange local(1);
+				queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+
+				// get the results
+				int* foo = new int[numCells];
+				queue.enqueueReadBuffer(out, CL_TRUE, 0, numCells * sizeof(int), foo);
+				for(int i = 0; i < numCells; i++)
+				{
+					debugLog() << foo[i] << endl;
+				}
+
+
+
+
 				// free memory
+
+				//INTERPOLATED POINTS
 			}
 
 			// free memory
