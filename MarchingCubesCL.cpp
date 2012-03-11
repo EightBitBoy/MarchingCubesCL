@@ -36,6 +36,13 @@ namespace MC
 		{
 			float factor;
 			Point3 result;
+
+			factor = (isoValue - valueA) / (valueB - valueA);
+			result[0] = pointA[0] + factor * (pointB[0] - pointA[0]);
+			result[1] = pointA[1] + factor * (pointB[1] - pointA[1]);
+			result[2] = pointA[2] + factor * (pointB[2] - pointA[2]);
+
+			return result;
 		}
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters)
@@ -66,7 +73,7 @@ namespace MC
 				// TODO use this!
 				//size_t numCells = grid->numCells();
 				size_t numCells = 6000;
-				size_t numCellPoints = 8;
+				const size_t numCellPoints = 8;
 				size_t numValues = numCells * numCellPoints;
 				int time = 0;
 
@@ -107,19 +114,57 @@ namespace MC
 					if (values[(i * numCellPoints) + 7] < isoValue) index |= 128;
 
 					indices[i] = index;
-					debugLog() << index << endl;
 				}
 				debugLog() << "indexing finished" << endl;
 
 				// calculate and draw polygons
 				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
 				{
+					Cell cell = grid->cell(i);
+					Point3 cellPoints[numCellPoints];
+					float cellValues[numCellPoints];
+
+					for(int j = 0; j < numCellPoints; ++j)
+					{
+						cellPoints[j] = points[cell.index(j)];
+						cellValues[j] = values[(i * numCellPoints) +j];
+					}
+
+
 					int indexValue = edgeTable[indices[i]];
+					Point3 vertices[12];
+
 					if(indexValue == 0)
 						continue;
-					
-					//if(indexValue & 1)
-					//	interpolate();
+					if(indexValue &    1)
+						vertices[ 0] = interpolate(isoValue, cellPoints[0], cellPoints[1], cellValues[0], cellValues[1]);
+					if(indexValue &    2)
+						vertices[ 1] = interpolate(isoValue, cellPoints[1], cellPoints[2], cellValues[1], cellValues[2]);
+					if(indexValue &    4)
+						vertices[ 2] = interpolate(isoValue, cellPoints[2], cellPoints[3], cellValues[2], cellValues[3]);
+					if(indexValue &    8)
+						vertices[ 3] = interpolate(isoValue, cellPoints[3], cellPoints[0], cellValues[3], cellValues[0]);
+					if(indexValue &   16)
+						vertices[ 4] = interpolate(isoValue, cellPoints[4], cellPoints[5], cellValues[4], cellValues[5]);
+					if(indexValue &   32)
+						vertices[ 5] = interpolate(isoValue, cellPoints[5], cellPoints[6], cellValues[5], cellValues[6]);
+					if(indexValue &   64)
+						vertices[ 6] = interpolate(isoValue, cellPoints[6], cellPoints[7], cellValues[6], cellValues[7]);
+					if(indexValue &  128)
+						vertices[ 7] = interpolate(isoValue, cellPoints[7], cellPoints[4], cellValues[7], cellValues[4]);
+					if(indexValue &  256)
+						vertices[ 8] = interpolate(isoValue, cellPoints[0], cellPoints[4], cellValues[0], cellValues[4]);
+					if(indexValue &  512)
+						vertices[ 9] = interpolate(isoValue, cellPoints[1], cellPoints[5], cellValues[1], cellValues[5]);
+					if(indexValue & 1024)
+						vertices[10] = interpolate(isoValue, cellPoints[2], cellPoints[6], cellValues[2], cellValues[6]);
+					if(indexValue & 2048)
+						vertices[11] = interpolate(isoValue, cellPoints[3], cellPoints[7], cellValues[3], cellValues[7]);
+
+
+					for(int j = 0; triTable[indexValue][j] != -1; j = j + 3)
+					{
+					}
 				}
 				debugLog() << "polygonizing finished" << endl;
 
