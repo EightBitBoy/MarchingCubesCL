@@ -97,19 +97,26 @@ namespace MC
 					values[(i * numCellPoints) + j] = (float)(rand() % 10);
 				}
 			}
-			debugLog() << "loading finished" << endl;
+			debugLog() << "loading values finished" << endl;
 
 			// load all points into an array
-			cl_float4* cellPoints = new cl_float4[numValues];
+			cl_float4* pointsVec = new cl_float4[numValues];
 			for(Progress i(*this, "load cells", numCells); i < numCells; ++i)
 			{
 				Cell cell = grid->cell(i);
 				for(size_t j = 0; j < numCellPoints; ++j)
 				{
 					Point3 p = points[cell.index(j)];
+					cl_float4 pVec;
+
+					pVec.s[0] = p[0];
+					pVec.s[1] = p[1];
+					pVec.s[2] = p[2];
+
+					pointsVec[(i * numCellPoints) + j] = pVec;
 				}
 			}
-
+			debugLog() << "loading points finished" << endl;
 
 			// ==================
 			// CPU implementation
