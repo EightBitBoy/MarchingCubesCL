@@ -29,6 +29,7 @@ namespace MC
 				add<const Grid<3>*>("grid", "", 0);
 				add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
 				add<float>("iso value", "", 1.0);
+				add<Color>("color", "", Color(0.75, 0.0, 0.0));
 			}
 		};
 
@@ -52,6 +53,7 @@ namespace MC
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			const bool useOpenCL = parameters.get<bool>("use OpenCL");
 			const float isoValue = parameters.get<float>("iso value");
+			const Color color = parameters.get<Color>("color");
 
 			if(field == false)
 			{
@@ -65,6 +67,8 @@ namespace MC
 			auto evaluator = field->makeEvaluator();
 			auto& points = grid->parent().points();
 
+			polygonGroup = makeGraphics("iso surface");
+			polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 			// ==================
 			// CPU implementation
 			// ==================
@@ -164,6 +168,15 @@ namespace MC
 
 					for(int j = 0; triTable[indexValue][j] != -1; j = j + 3)
 					{
+						/*
+						vector<Point3> triPoints;
+
+						triPoints.push_back(vertices[triTable[indexValue][j    ]]);
+						triPoints.push_back(vertices[triTable[indexValue][j + 1]]);
+						triPoints.push_back(vertices[triTable[indexValue][j + 2]]);
+
+						polygonGroup->primitive().add(Primitive::POLYGON).setColor(color).setVertices(triPoints);
+						*/
 					}
 				}
 				debugLog() << "polygonizing finished" << endl;
