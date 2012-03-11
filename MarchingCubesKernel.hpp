@@ -3,6 +3,11 @@
 std::string getKernelSource()
 {
 	std::string s = STRINGIFY(
+		float4 interpolate(
+		)
+		{
+		}
+
 		__kernel void marchingCubes(
 			float isoValue,
 			__global float* values,

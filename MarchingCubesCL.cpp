@@ -287,6 +287,8 @@ namespace MC
 
 				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
 				cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+				//cl::Buffer bufferEdgeTable
+				//cl::Buffer bufferTriTable
 
 				cl::Buffer bufferOUTTEST = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
 
