@@ -46,6 +46,14 @@ namespace MC
 			return result;
 		}
 
+		void printError(cl_int error, string description)
+		{
+			if(error != CL_SUCCESS)
+			{
+				debugLog() << description << " ERROR: " << error << endl;
+			}
+		}
+
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters)
 		{
 			// get the data
@@ -123,7 +131,7 @@ namespace MC
 			// ==================
 			if(useOpenCL == false)
 			{
-				debugLog() << "not using OpenCL" << endl;
+				debugLog() << ">>>> not using OpenCL <<<<" << endl;
 
 				// get the cube indices
 				int* indices = new int[numCells];
@@ -211,7 +219,54 @@ namespace MC
 			// =====================
 			if(useOpenCL == true)
 			{
-				debugLog() << "using OpenCL" << endl;
+				debugLog() << ">>>> using OpenCL <<<<" << endl;
+
+				cl_int error = CL_SUCCESS;
+				cl_ulong infoNumber = 0;
+				string infoString = "";
+
+				// get the platforms
+				vector<cl::Platform> platforms;
+				cl::Platform::get(&platforms);
+
+				for(int i = 0; i < platforms.size(); i++)
+				{
+					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
+					debugLog() << "platform #" << i << " name: " << infoString << endl;
+					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
+					debugLog() << "platform #" << i << " version: " << infoString << endl;
+				}
+
+				// create a context
+				cl_context_properties properties[3] = { 
+					CL_CONTEXT_PLATFORM, 
+					(cl_context_properties)(platforms[0])(), 
+					0 
+				};
+				cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
+				printError(error, "context");
+
+				// get the devices
+				vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+				if(devices.size() == 0)
+				{
+					throw runtime_error("No devices found!");
+				}
+				for(int i = 0; i < devices.size(); i++)
+				{
+					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
+					debugLog() << "device #"<< i << " name: " << infoString << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
+					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
+					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
+				}
 
 				// free memory
 			}
