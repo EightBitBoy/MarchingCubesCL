@@ -123,6 +123,8 @@ namespace MC
 			// ==================
 			if(useOpenCL == false)
 			{
+				debugLog() << "not using OpenCL" << endl;
+
 				// get the cube indices
 				int* indices = new int[numCells];
 				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
@@ -209,13 +211,14 @@ namespace MC
 			// =====================
 			if(useOpenCL == true)
 			{
-				throw runtime_error("OpenCL algorithm not yet implemented!");
+				debugLog() << "using OpenCL" << endl;
 
 				// free memory
 			}
 
 			// free memory
 			delete[] values;
+			delete[] pointsVec;
 		}
 	};
 
