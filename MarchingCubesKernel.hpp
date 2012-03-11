@@ -3,11 +3,16 @@
 std::string getKernelSource()
 {
 	std::string s = STRINGIFY(
-		__kernel void marchingCubes(__global int *OUT)
+		__kernel void marchingCubes(
+			float isoValue,
+			__global float* values,
+			__global float4* pointsVec,
+			__global float* OUTTEST
+		)
 		{
 			int i = get_global_id(0);
 
-			OUT[i] = i;
+			OUTTEST[i] = pointsVec[i].x;
 		}
 	);
 

@@ -284,27 +284,35 @@ namespace MC
 				cl::Kernel kernel(program, "marchingCubes");
 
 				// prepare buffers
-				cl::Buffer out = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
-				kernel.setArg(0, out);
+				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+				cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
 
+				cl::Buffer bufferOUTTEST = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
+
+				queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+				queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+
+
+				kernel.setArg(0, isoValue);
+				kernel.setArg(1, bufferValues);
+				kernel.setArg(2, bufferPointsVec);
+				kernel.setArg(3, bufferOUTTEST);
 
 				// run the kernel
-				cl::NDRange global(numCells); // TODO use the number of cells
+				cl::NDRange global(numCells);
 				cl::NDRange local(1);
 				queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 
 				// get the results
-				int* foo = new int[numCells];
-				queue.enqueueReadBuffer(out, CL_TRUE, 0, numCells * sizeof(int), foo);
+
+				float* OUTTEST = new float[numCells];
+				queue.enqueueReadBuffer(bufferOUTTEST, CL_TRUE, 0, numCells * sizeof(float), OUTTEST);
 				for(int i = 0; i < numCells; i++)
 				{
-					debugLog() << foo[i] << endl;
+					debugLog() << OUTTEST[i] << endl;
 				}
-
-
-
-
+				
 				// free memory
 
 				//INTERPOLATED POINTS
