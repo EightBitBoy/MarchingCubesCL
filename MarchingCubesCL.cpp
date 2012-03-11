@@ -69,39 +69,53 @@ namespace MC
 
 			polygonGroup = makeGraphics("iso surface");
 			polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
+
+
+			// TODO use this!
+			//size_t numCells = grid->numCells();
+			size_t numCells = 1000;
+			const size_t numCellPoints = 8;
+			size_t numValues = numCells * numCellPoints;
+			int time = 0;
+
+			// load all scalar values into an array
+			float* values = new float[numValues];
+			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
+			{
+				Cell cell = grid->cell(i);
+				for(size_t j = 0; j < numCellPoints; ++j)
+				{
+					// TODO USE THE CORRECT VALUES
+					Point3 p = points[cell.index(j)];
+					if(evaluator->reset(p, time))
+					{
+					}
+					else
+					{
+							
+					}
+					values[(i * numCellPoints) + j] = (float)(rand() % 10);
+				}
+			}
+			debugLog() << "loading finished" << endl;
+
+			// load all points into an array
+			cl_float4* cellPoints = new cl_float4[numValues];
+			for(Progress i(*this, "load cells", numCells); i < numCells; ++i)
+			{
+				Cell cell = grid->cell(i);
+				for(size_t j = 0; j < numCellPoints; ++j)
+				{
+					Point3 p = points[cell.index(j)];
+				}
+			}
+
+
 			// ==================
 			// CPU implementation
 			// ==================
 			if(useOpenCL == false)
 			{
-				// TODO use this!
-				//size_t numCells = grid->numCells();
-				size_t numCells = 1000;
-				const size_t numCellPoints = 8;
-				size_t numValues = numCells * numCellPoints;
-				int time = 0;
-
-				// load all scalar values into an array
-				float* values = new float[numValues];
-				for(Progress i(*this, "load data", numCells); i < numCells; ++i)
-				{
-					Cell cell = grid->cell(i);
-					for(size_t j = 0; j < numCellPoints; ++j)
-					{
-						// TODO USE THE CORRECT VALUES
-						Point3 p = points[cell.index(j)];
-						if(evaluator->reset(p, time))
-						{
-						}
-						else
-						{
-							
-						}
-						values[(i * numCellPoints) + j] = (float)(rand() % 10);
-					}
-				}
-				debugLog() << "loading finished" << endl;
-
 				// get the cube indices
 				int* indices = new int[numCells];
 				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
@@ -180,7 +194,6 @@ namespace MC
 				debugLog() << "polygonization finished" << endl;
 
 				// free memory
-				delete[] values;
 				delete[] indices;
 			}
 
@@ -190,7 +203,12 @@ namespace MC
 			if(useOpenCL == true)
 			{
 				throw runtime_error("OpenCL algorithm not yet implemented!");
+
+				// free memory
 			}
+
+			// free memory
+			delete[] values;
 		}
 	};
 
