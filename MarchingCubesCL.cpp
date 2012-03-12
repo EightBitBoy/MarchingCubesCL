@@ -114,7 +114,7 @@ namespace MC
 			}
 			*/
 
-			queue = cl::CommandQueue(cont, devices[0]);
+			
 
 			// prepare the kernel
 			string s = getKernelSource();
@@ -342,12 +342,14 @@ namespace MC
 				throw runtime_error("No devices found!");
 			}
 
+			queue = cl::CommandQueue(context, devices[0]);
+
 			// prepare buffers
 			bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
 			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
 			printError(error, "bufferEdgeTable");
 
-			bufferTriTable = cl::Buffer(cont, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
+			bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
 			error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
 			printError(error, "bufferTriTable");
 
