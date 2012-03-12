@@ -87,12 +87,6 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			debugLog() << ">>>> using OpenCL <<<<" << endl;
-
-			cl_int error = CL_SUCCESS;
-			cl_ulong infoNumber = 0;
-			string infoString = "";
-
 			// get the platforms
 			vector<cl::Platform> platforms;
 			cl::Platform::get(&platforms);
@@ -268,6 +262,10 @@ namespace MC
 		size_t numValues;
 		float* values;
 		cl_float4* pointsVec;
+
+		cl_int error;
+		cl_ulong infoNumber;
+		string infoString;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
