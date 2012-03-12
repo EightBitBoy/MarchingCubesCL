@@ -96,16 +96,6 @@ namespace MC
 			}
 			*/
 
-			// create a context
-
-
-			// get the devices
-			vector<cl::Device> devices = cont.getInfo<CL_CONTEXT_DEVICES>();
-			if(devices.size() == 0)
-			{
-				throw runtime_error("No devices found!");
-			}
-
 			/*
 			for(int i = 0; i < devices.size(); i++)
 			{
@@ -247,6 +237,7 @@ namespace MC
 		string infoString;
 
 		vector<cl::Platform> platforms;
+		vector<cl::Device> devices;
 		cl::Context cont;
 		int* triTableArray;
 
@@ -344,6 +335,12 @@ namespace MC
 			printError(error, "context");
 
 			cont = context;
+
+			devices = cont.getInfo<CL_CONTEXT_DEVICES>();
+			if(devices.size() == 0)
+			{
+				throw runtime_error("No devices found!");
+			}
 
 			// prepare buffers
 			bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
