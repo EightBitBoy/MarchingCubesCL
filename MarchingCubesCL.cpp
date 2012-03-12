@@ -73,11 +73,11 @@ namespace MC
 			
 			void startPolygonizing()
 			{
-				mAlgo.scheduleJob(bind(&MarchingCubes::polygonizeOpenCL, &mAlgo, mSlider.get()));
+				mAlgo.scheduleJob(bind(&MarchingCubes::polygonize, &mAlgo, mSlider.get()));
 			}
 		};
 
-		void polygonizeOpenCL(size_t& value)
+		void polygonize(size_t& value)
 		{
 			unique_lock<mutex> lock(mMutex);
 
@@ -85,13 +85,11 @@ namespace MC
 			Color color = Color(1.0, 0.0, 0.0);
 		}
 
-		void polygonizeNoOpenCL()
-		{
-		}
-
 		mutex mMutex;
 		Window<OptionsWindow> mWindow;
 		unique_ptr<Graphics> polygonGroup;
+
+		bool useOpenCL;
 
 		size_t numCells;
 		size_t numCellPoints;
@@ -104,7 +102,7 @@ namespace MC
 			// get the data
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
-			const bool useOpenCL = parameters.get<bool>("use OpenCL");
+			useOpenCL = parameters.get<bool>("use OpenCL");
 			const float isoValue = parameters.get<float>("iso value");
 			const Color color = parameters.get<Color>("color");
 
