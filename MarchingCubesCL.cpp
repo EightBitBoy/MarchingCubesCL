@@ -21,8 +21,6 @@ namespace MC
 	class MarchingCubes: public Algorithm
 	{
 	public:
-		unique_ptr<Graphics> polygonGroup;
-
 		struct Options: public Algorithm::Options
 		{
 			Options()
@@ -61,34 +59,41 @@ namespace MC
 
 			DockWindow mWindow;
 			BoxLayout mLayout;
-			LineEdit mText;
-			PushButton mButton;
 			MarchingCubes& mAlgo;
+			Slider mSlider;
+			
 
 			OptionsWindow(MainWindow& mainWindow, MarchingCubes& algo)
 				: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
 				mLayout(mWindow.getWidgetHolder(), false),
-				mText(mLayout.addWidgetHolder()),
-				mButton(mLayout.addWidgetHolder(), "Send", bind(&OptionsWindow::send, this)),
+				mSlider(mLayout.addWidgetHolder(), 10, true, bind(&OptionsWindow::show, this)),
 				mAlgo(algo)
 			{
 			}
-
-			void send()
+			
+			void show()
 			{
-				mAlgo.scheduleJob(bind(&MarchingCubes::print, &mAlgo, mText.get()));
+				mAlgo.scheduleJob(bind(&MarchingCubes::show, &mAlgo, mSlider.get()));
 			}
-
 		};
 
-		void print(const string& name)
+		void show(size_t& val)
 		{
 			unique_lock<mutex> lock(mMutex);
-			infoLog() << name << endl;
+			infoLog() << val << endl;
+		}
+
+		void polygonizeOpenCL()
+		{
+		}
+
+		void polygonizeNoOpenCL()
+		{
 		}
 
 		mutex mMutex;
 		Window<OptionsWindow> mWindow;
+		unique_ptr<Graphics> polygonGroup;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
