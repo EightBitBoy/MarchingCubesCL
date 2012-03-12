@@ -32,7 +32,6 @@ namespace MC
 				add<const Grid<3>*>("grid", "", 0);
 				//add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
 				add<float>("max iso value", "", 10.0);
-				add<Color>("color", "", Color(0.75, 0.0, 0.0));
 			}
 		};
 
@@ -273,7 +272,6 @@ namespace MC
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			maxIsoValue = parameters.get<float>("max iso value");
-			const Color color = parameters.get<Color>("color");
 
 			if(field == false)
 			{
