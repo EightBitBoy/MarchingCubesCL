@@ -285,9 +285,11 @@ namespace MC
 
 				// prepare buffers
 
+				cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
+				queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+
 				//cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
 				//cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
-				//cl::Buffer bufferEdgeTable
 				//cl::Buffer bufferTriTable
 
 				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
@@ -298,8 +300,9 @@ namespace MC
 
 
 				kernel.setArg(0, isoValue);
-				kernel.setArg(1, bufferFloatTest);
-				kernel.setArg(2, bufferIntTest);
+				kernel.setArg(1, bufferEdgeTable);
+				kernel.setArg(2, bufferFloatTest);
+				kernel.setArg(3, bufferIntTest);
 
 				// run the kernel
 				cl::NDRange global(numCells);
