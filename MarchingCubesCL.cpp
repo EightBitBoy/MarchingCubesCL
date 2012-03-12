@@ -66,25 +66,22 @@ namespace MC
 			OptionsWindow(MainWindow& mainWindow, MarchingCubes& algo)
 				: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
 				mLayout(mWindow.getWidgetHolder(), false),
-				mSlider(mLayout.addWidgetHolder(), 10, true, bind(&OptionsWindow::show, this)),
+				mSlider(mLayout.addWidgetHolder(), 10, true, bind(&OptionsWindow::startPolygonizing, this)),
 				mAlgo(algo)
 			{
 			}
 			
-			void show()
+			void startPolygonizing()
 			{
-				mAlgo.scheduleJob(bind(&MarchingCubes::show, &mAlgo, mSlider.get()));
+				mAlgo.scheduleJob(bind(&MarchingCubes::polygonizeOpenCL, &mAlgo, mSlider.get()));
 			}
 		};
 
-		void show(size_t& val)
+		void polygonizeOpenCL(size_t& value)
 		{
+			float isoValue = value;
 			unique_lock<mutex> lock(mMutex);
-			infoLog() << val << endl;
-		}
-
-		void polygonizeOpenCL()
-		{
+			infoLog() << isoValue << endl;
 		}
 
 		void polygonizeNoOpenCL()
@@ -94,6 +91,9 @@ namespace MC
 		mutex mMutex;
 		Window<OptionsWindow> mWindow;
 		unique_ptr<Graphics> polygonGroup;
+
+		float* values;
+		cl_float4* pointsVec;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
@@ -126,7 +126,7 @@ namespace MC
 			int time = 0;
 
 			// load all scalar values into an array
-			float* values = new float[numValues];
+			values = new float[numValues];
 			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
 			{
 				Cell cell = grid->cell(i);
@@ -147,7 +147,7 @@ namespace MC
 			debugLog() << "loading values finished" << endl;
 
 			// load all points into an array
-			cl_float4* pointsVec = new cl_float4[numValues];
+			pointsVec = new cl_float4[numValues];
 			for(Progress i(*this, "load cells", numCells); i < numCells; ++i)
 			{
 				Cell cell = grid->cell(i);
