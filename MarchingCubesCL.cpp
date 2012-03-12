@@ -79,9 +79,10 @@ namespace MC
 
 		void polygonizeOpenCL(size_t& value)
 		{
-			float isoValue = value;
 			unique_lock<mutex> lock(mMutex);
-			infoLog() << isoValue << endl;
+
+			float isoValue = value;
+			Color color = Color(1.0, 0.0, 0.0);
 		}
 
 		void polygonizeNoOpenCL()
@@ -92,6 +93,9 @@ namespace MC
 		Window<OptionsWindow> mWindow;
 		unique_ptr<Graphics> polygonGroup;
 
+		size_t numCells;
+		size_t numCellPoints;
+		size_t numValues;
 		float* values;
 		cl_float4* pointsVec;
 
@@ -119,10 +123,10 @@ namespace MC
 			polygonGroup = makeGraphics("iso surface");
 			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
-			size_t numCells = grid->numCells();
-			//size_t numCells = 1000;
-			const size_t numCellPoints = 8;
-			size_t numValues = numCells * numCellPoints;
+			//numCells = grid->numCells();
+			numCells = 1000;
+			numCellPoints = 8;
+			numValues = numCells * numCellPoints;
 			int time = 0;
 
 			// load all scalar values into an array
