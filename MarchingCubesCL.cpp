@@ -299,22 +299,24 @@ namespace MC
 				cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
 				queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
 
-				//cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+				queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+
 				//cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
-				//cl::Buffer bufferTriTable
+				//queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 
 				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
 				cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
-				//queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
-				//queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 
 
 				kernel.setArg(0, isoValue);
 				kernel.setArg(1, bufferEdgeTable);
 				kernel.setArg(2, bufferTriTable);
-				kernel.setArg(3, bufferFloatTest);
-				kernel.setArg(4, bufferIntTest);
+				kernel.setArg(3, bufferValues);
+				//kernel.setArg(4, bufferPointsVec);
+
+				kernel.setArg(4, bufferFloatTest);
+				kernel.setArg(5, bufferIntTest);
 
 				// run the kernel
 				cl::NDRange global(numCells);

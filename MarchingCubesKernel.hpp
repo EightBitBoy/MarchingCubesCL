@@ -12,6 +12,8 @@ std::string getKernelSource()
 			float isoValue,
 			__global int* edgeTable,
 			__global int* triTable,
+			__global float* values,
+
 			__global float* floatTest,
 			__global int* intTest
 		)
@@ -20,7 +22,7 @@ std::string getKernelSource()
 
 
 
-			floatTest[i] = isoValue;
+			floatTest[i] = values[1];
 			intTest[i] = triTable[96];
 		}
 	);
