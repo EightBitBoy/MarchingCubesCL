@@ -32,6 +32,7 @@ namespace MC
 				add<const Grid<3>*>("grid", "", 0);
 				//add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
 				add<float>("max iso value", "", 10.0);
+				add<bool>("debug", "provides more output", false);
 			}
 		};
 
@@ -86,33 +87,32 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			/*
-			for(int i = 0; i < platforms.size(); i++)
+			if(debug == true)
 			{
-				platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
-				debugLog() << "platform #" << i << " name: " << infoString << endl;
-				platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
-				debugLog() << "platform #" << i << " version: " << infoString << endl;
-			}
-			*/
+				for(int i = 0; i < platforms.size(); i++)
+				{
+					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
+					debugLog() << "platform #" << i << " name: " << infoString << endl;
+					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
+					debugLog() << "platform #" << i << " version: " << infoString << endl;
+				}
 
-			/*
-			for(int i = 0; i < devices.size(); i++)
-			{
-				devices[i].getInfo(CL_DEVICE_NAME, &infoString);
-				debugLog() << "device #"<< i << " name: " << infoString << endl;
-				devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
-				debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
-				devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
-				debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
-				devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
-				debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
-				devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
-				debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
-				devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
-				debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
+				for(int i = 0; i < devices.size(); i++)
+				{
+					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
+					debugLog() << "device #"<< i << " name: " << infoString << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
+					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
+					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
+				}
 			}
-			*/
 
 			cl::Kernel kernel(program, "marchingCubes");
 
@@ -202,7 +202,7 @@ namespace MC
 		Window<OptionsWindow> mWindow;
 		unique_ptr<Graphics> polygonGroup;
 
-		bool useOpenCL;
+		bool debug;
 		float maxIsoValue;
 
 		size_t numCells;
@@ -233,6 +233,8 @@ namespace MC
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			maxIsoValue = parameters.get<float>("max iso value");
+			debug = parameters.get<bool>("debug");
+			
 
 			if(field == false)
 			{
@@ -249,8 +251,8 @@ namespace MC
 			polygonGroup = makeGraphics("iso surface");
 			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
-			//numCells = grid->numCells();
-			numCells = 1000;
+			numCells = grid->numCells();
+			//numCells = 1000;
 			numCellPoints = 8;
 			numValues = numCells * numCellPoints;
 			int time = 0;
