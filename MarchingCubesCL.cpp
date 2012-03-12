@@ -114,22 +114,9 @@ namespace MC
 			}
 			*/
 
-			
-
-			// prepare the kernel
-
-
 			cl::Kernel kernel(program, "marchingCubes");
 
 			// prepare buffers
-			cl::Buffer bufferValues = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues * sizeof(float));
-			error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
-			printError(error, "bufferValues");
-
-			cl::Buffer bufferPointsVec = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
-			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
-			printError(error, "bufferPointsVec");
-
 			cl::Buffer bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
 
 			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
@@ -237,6 +224,8 @@ namespace MC
 
 		cl::Buffer bufferEdgeTable;
 		cl::Buffer bufferTriTable;
+		cl::Buffer bufferValues;
+		cl::Buffer bufferPointsVec;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
@@ -356,6 +345,14 @@ namespace MC
 			bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
 			error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
 			printError(error, "bufferTriTable");
+
+			bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+			error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+			printError(error, "bufferValues");
+
+			bufferPointsVec = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+			printError(error, "bufferPointsVec");
 
 			// polygonizes once at startup
 			size_t startValue = 0;
