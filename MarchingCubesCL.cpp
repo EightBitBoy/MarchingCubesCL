@@ -307,10 +307,11 @@ namespace MC
 					Point3 p = points[cell.index(j)];
 					if(evaluator->reset(p, time))
 					{
+						// TODO nothing happens here
+						//values[(i * numCellPoints) + j] = evaluator->value();
 					}
 					else
 					{
-							
 					}
 					values[(i * numCellPoints) + j] = (float)(rand() % 10);
 				}
