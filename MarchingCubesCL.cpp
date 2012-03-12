@@ -81,7 +81,7 @@ namespace MC
 
 			// TODO use this!
 			//size_t numCells = grid->numCells();
-			size_t numCells = 50;
+			size_t numCells = 20;
 			const size_t numCellPoints = 8;
 			size_t numValues = numCells * numCellPoints;
 			int time = 0;
@@ -294,16 +294,20 @@ namespace MC
 				}
 
 				cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
-				queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+				error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+				printError(error, "bufferEdgeTable");
 
 				cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
-				queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
+				error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
+				printError(error, "bufferTriTable");
 
 				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
-				queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+				error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+				printError(error, "bufferValues");
 
-				//cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
-				//queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+				cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+				error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+				printError(error, "bufferPointsVec");
 
 				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
 				cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
@@ -313,10 +317,10 @@ namespace MC
 				kernel.setArg(1, bufferEdgeTable);
 				kernel.setArg(2, bufferTriTable);
 				kernel.setArg(3, bufferValues);
-				//kernel.setArg(4, bufferPointsVec);
+				kernel.setArg(4, bufferPointsVec);
 
-				kernel.setArg(4, bufferFloatTest);
-				kernel.setArg(5, bufferIntTest);
+				kernel.setArg(5, bufferFloatTest);
+				kernel.setArg(6, bufferIntTest);
 
 				// run the kernel
 				cl::NDRange global(numCells);

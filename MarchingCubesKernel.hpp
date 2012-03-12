@@ -13,6 +13,7 @@ std::string getKernelSource()
 			__global int* edgeTable,
 			__global int* triTable,
 			__global float* values,
+			__global float4* pointsVec,
 
 			__global float* floatTest,
 			__global int* intTest
@@ -22,7 +23,7 @@ std::string getKernelSource()
 
 
 
-			floatTest[i] = values[1];
+			floatTest[i] = pointsVec[0].x;
 			intTest[i] = triTable[96];
 		}
 	);
