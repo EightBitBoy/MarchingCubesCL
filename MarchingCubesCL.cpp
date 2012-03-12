@@ -285,6 +285,7 @@ namespace MC
 
 				// prepare buffers
 
+
 				cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
 				queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
 
@@ -326,7 +327,8 @@ namespace MC
 				}
 				
 				// free memory
-
+				delete[] floatTest;
+				delete[] intTest;
 				//INTERPOLATED POINTS
 			}
 
