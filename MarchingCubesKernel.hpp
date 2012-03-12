@@ -30,10 +30,7 @@ std::string getKernelSource()
 			__global float* values,
 			__global float4* pointsVec,
 			__global float4* triPoints,
-			__global int* indices,
-
-			__global float* floatTest,
-			__global int* intTest
+			__global int* indices
 		)
 		{
 			int i = get_global_id(0);
@@ -61,9 +58,6 @@ std::string getKernelSource()
 			triPoints[(i * 12) +  9] = interpolate(isoValue, pointsVec[(i * 8) + 1], pointsVec[(i * 8) + 5], values[(i * 8) + 1], values[(i * 8) + 5]);
 			triPoints[(i * 12) + 10] = interpolate(isoValue, pointsVec[(i * 8) + 2], pointsVec[(i * 8) + 6], values[(i * 8) + 2], values[(i * 8) + 6]);
 			triPoints[(i * 12) + 11] = interpolate(isoValue, pointsVec[(i * 8) + 3], pointsVec[(i * 8) + 7], values[(i * 8) + 3], values[(i * 8) + 7]);
-
-			floatTest[i] = 1.0;
-			intTest[i] = indices[i];
 		}
 	);
 

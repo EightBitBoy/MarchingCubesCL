@@ -113,6 +113,8 @@ namespace MC
 			{
 				throw runtime_error("No devices found!");
 			}
+
+			/*
 			for(int i = 0; i < devices.size(); i++)
 			{
 				devices[i].getInfo(CL_DEVICE_NAME, &infoString);
@@ -128,6 +130,7 @@ namespace MC
 				devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
 				debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
 			}
+			*/
 
 			cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
 
@@ -145,15 +148,6 @@ namespace MC
 			cl::Kernel kernel(program, "marchingCubes");
 
 			// prepare buffers
-			int* triTableArray = new int[256 * 16];
-			for(int i = 0; i < 256; ++i)
-			{
-				for(int j = 0; j < 16; ++j)
-				{
-					triTableArray[(i * 16) + j] = triTable[i][j];
-				}
-			}
-
 			cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
 			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
 			printError(error, "bufferEdgeTable");
@@ -174,8 +168,8 @@ namespace MC
 
 			cl::Buffer bufferIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
-			cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
-			cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+			//cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
+			//cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
 
 			kernel.setArg(0, isoValue);
@@ -186,8 +180,8 @@ namespace MC
 			kernel.setArg(5, bufferTriPoints);
 			kernel.setArg(6, bufferIndices);
 
-			kernel.setArg(7, bufferFloatTest);
-			kernel.setArg(8, bufferIntTest);
+			//kernel.setArg(7, bufferFloatTest);
+			//kernel.setArg(8, bufferIntTest);
 
 			// run the kernel
 			cl::NDRange global(numCells);
@@ -195,19 +189,21 @@ namespace MC
 			queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 
 			// get the results
+			/*
 			float* floatTest = new float[numCells];
 			queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
 			for(int i = 0; i < numCells; i++)
 			{
-				//debugLog() << floatTest[i] << endl;
+				debugLog() << floatTest[i] << endl;
 			}
 
 			int* intTest = new int[numCells];
 			queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
 			for(int i = 0; i < numCells; i++)
 			{
-				//debugLog() << intTest[i] << endl;
+				debugLog() << intTest[i] << endl;
 			}
+			*/
 				
 			cl_float4* triPoints = new cl_float4[12 * numCells];
 			queue.enqueueReadBuffer(bufferTriPoints, CL_TRUE, 0, 12 * numCells * sizeof(cl_float4), triPoints);
@@ -243,8 +239,8 @@ namespace MC
 			}
 
 			// free memory
-			delete[] floatTest;
-			delete[] intTest;
+			//delete[] floatTest;
+			//delete[] intTest;
 			delete[] triPoints;
 			delete[] indices;
 		}
@@ -265,6 +261,8 @@ namespace MC
 		cl_int error;
 		cl_ulong infoNumber;
 		string infoString;
+
+		int* triTableArray;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
@@ -335,6 +333,14 @@ namespace MC
 			}
 			debugLog() << "loading points finished" << endl;
 
+			triTableArray = new int[256 * 16];
+			for(int i = 0; i < 256; ++i)
+			{
+				for(int j = 0; j < 16; ++j)
+				{
+					triTableArray[(i * 16) + j] = triTable[i][j];
+				}
+			}
 			// polygonizes once at startup
 			size_t startValue = 0;
 			polygonize(startValue);
