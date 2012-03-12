@@ -117,15 +117,7 @@ namespace MC
 			
 
 			// prepare the kernel
-			string s = getKernelSource();
-			cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
 
-			cl::Program program = cl::Program(cont, source);
-			error = program.build(devices);
-			printError(error, "build");
-
-			program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
-			debugLog() << "build info: " << infoString << endl;
 
 			cl::Kernel kernel(program, "marchingCubes");
 
@@ -239,9 +231,10 @@ namespace MC
 		vector<cl::Platform> platforms;
 		vector<cl::Device> devices;
 		cl::Context cont;
+		cl::CommandQueue queue;
+		cl::Program program;
 		int* triTableArray;
 
-		cl::CommandQueue queue;
 		cl::Buffer bufferEdgeTable;
 		cl::Buffer bufferTriTable;
 
@@ -343,6 +336,17 @@ namespace MC
 			}
 
 			queue = cl::CommandQueue(context, devices[0]);
+
+			// prepare the kernel
+			string s = getKernelSource();
+			cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
+
+			program = cl::Program(cont, source);
+			error = program.build(devices);
+			printError(error, "build");
+
+			program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
+			debugLog() << "build info: " << infoString << endl;
 
 			// prepare buffers
 			bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
