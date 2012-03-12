@@ -80,8 +80,8 @@ namespace MC
 
 
 			// TODO use this!
-			//size_t numCells = grid->numCells();
-			size_t numCells = 20;
+			size_t numCells = grid->numCells();
+			//size_t numCells = 20;
 			const size_t numCellPoints = 8;
 			size_t numValues = numCells * numCellPoints;
 			int time = 0;
@@ -334,19 +334,18 @@ namespace MC
 				queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 
 				// get the results
-
 				float* floatTest = new float[numCells];
 				queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
 				for(int i = 0; i < numCells; i++)
 				{
-					debugLog() << floatTest[i] << endl;
+					//debugLog() << floatTest[i] << endl;
 				}
 
 				int* intTest = new int[numCells];
 				queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
 				for(int i = 0; i < numCells; i++)
 				{
-					debugLog() << intTest[i] << endl;
+					//debugLog() << intTest[i] << endl;
 				}
 				
 				cl_float4* triPoints = new cl_float4[12 * numCells];
@@ -355,6 +354,31 @@ namespace MC
 				int* indices = new int[numCells];
 				queue.enqueueReadBuffer(bufferIndices, CL_TRUE, 0, numCells * sizeof(int), indices);
 
+
+				// draw the triangles
+				for(size_t i = 0; i < numCells; ++i)
+				{
+					int index = indices[i];
+					for(int j = 0; triTable[index][j] != -1; j = j+3)
+					{
+						vector<cl_float4> triPointsVec;
+						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 0])]);
+						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 1])]);
+						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 2])]);
+
+						vector<Point3> triPoints;
+						for(int k = 0; k < 3; ++k)
+						{
+							Point3 p;
+							p[0] = triPointsVec[k].s[0];
+							p[1] = triPointsVec[k].s[1];
+							p[2] = triPointsVec[k].s[2];
+							triPoints.push_back(p);
+						}
+
+						polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
+					}
+				}
 
 				// free memory
 				delete[] floatTest;
