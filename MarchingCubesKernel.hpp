@@ -11,6 +11,7 @@ std::string getKernelSource()
 		__kernel void marchingCubes(
 			float isoValue,
 			__global int* edgeTable,
+			__global int* triTable,
 			__global float* floatTest,
 			__global int* intTest
 		)
@@ -20,7 +21,7 @@ std::string getKernelSource()
 
 
 			floatTest[i] = isoValue;
-			intTest[i] = edgeTable[2];
+			intTest[i] = triTable[96];
 		}
 	);
 

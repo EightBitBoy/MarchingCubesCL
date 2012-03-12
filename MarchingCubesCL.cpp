@@ -284,10 +284,20 @@ namespace MC
 				cl::Kernel kernel(program, "marchingCubes");
 
 				// prepare buffers
-
+				int* triTableArray = new int[256 * 16];
+				for(int i = 0; i < 256; ++i)
+				{
+					for(int j = 0; j < 16; ++j)
+					{
+						triTableArray[(i * 16) + j] = triTable[i][j];
+					}
+				}
 
 				cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
 				queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+
+				cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
+				queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
 
 				//cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
 				//cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
@@ -302,8 +312,9 @@ namespace MC
 
 				kernel.setArg(0, isoValue);
 				kernel.setArg(1, bufferEdgeTable);
-				kernel.setArg(2, bufferFloatTest);
-				kernel.setArg(3, bufferIntTest);
+				kernel.setArg(2, bufferTriTable);
+				kernel.setArg(3, bufferFloatTest);
+				kernel.setArg(4, bufferIntTest);
 
 				// run the kernel
 				cl::NDRange global(numCells);
