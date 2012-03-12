@@ -309,9 +309,9 @@ namespace MC
 				error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 				printError(error, "bufferPointsVec");
 
-				cl::Buffer bufferTriPoints = cl::Buffer(context, CL_MEM_WRITE_ONLY, 16 * numCells * sizeof(cl_float4));
+				cl::Buffer bufferTriPoints = cl::Buffer(context, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
 
-				cl::Buffer bufferTriNumber = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+				cl::Buffer bufferIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
 				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
 				cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
@@ -323,7 +323,7 @@ namespace MC
 				kernel.setArg(3, bufferValues);
 				kernel.setArg(4, bufferPointsVec);
 				kernel.setArg(5, bufferTriPoints);
-				kernel.setArg(6, bufferTriNumber);
+				kernel.setArg(6, bufferIndices);
 
 				kernel.setArg(7, bufferFloatTest);
 				kernel.setArg(8, bufferIntTest);
@@ -349,10 +349,18 @@ namespace MC
 					debugLog() << intTest[i] << endl;
 				}
 				
+				cl_float4* triPoints = new cl_float4[12 * numCells];
+				queue.enqueueReadBuffer(bufferTriPoints, CL_TRUE, 0, 12 * numCells * sizeof(cl_float4), triPoints);
+
+				int* indices = new int[numCells];
+				queue.enqueueReadBuffer(bufferIndices, CL_TRUE, 0, numCells * sizeof(int), indices);
+
+
 				// free memory
 				delete[] floatTest;
 				delete[] intTest;
-				//INTERPOLATED POINTS
+				delete[] triPoints;
+				delete[] indices;
 			}
 
 			// free memory
