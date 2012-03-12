@@ -17,6 +17,8 @@ using namespace std;
 using namespace boost;
 using namespace fantom;
 
+// TODO delete polygonGroup???
+
 namespace MC
 {
 	class MarchingCubes: public Algorithm
