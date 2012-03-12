@@ -11,6 +11,7 @@
 #include "MarchingCubesTables.hpp"
 
 #define __CL_ENABLE_EXCEPTIONS
+#define SENSITIVITY 100
 
 using namespace std;
 using namespace boost;
@@ -27,8 +28,8 @@ namespace MC
 			{
 				add<const TensorField<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
-				add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
-				add<float>("iso value", "", 1.0);
+				//add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
+				add<float>("max iso value", "", 10.0);
 				add<Color>("color", "", Color(0.75, 0.0, 0.0));
 			}
 		};
@@ -66,7 +67,7 @@ namespace MC
 			OptionsWindow(MainWindow& mainWindow, MarchingCubes& algo)
 				: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
 				mLayout(mWindow.getWidgetHolder(), false),
-				mSlider(mLayout.addWidgetHolder(), 10, true, bind(&OptionsWindow::startPolygonizing, this)),
+				mSlider(mLayout.addWidgetHolder(), SENSITIVITY, true, bind(&OptionsWindow::startPolygonizing, this)),
 				mAlgo(algo)
 			{
 			}
@@ -81,179 +82,8 @@ namespace MC
 		{
 			unique_lock<mutex> lock(mMutex);
 
-			float isoValue = value;
+			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
-		}
-
-		mutex mMutex;
-		Window<OptionsWindow> mWindow;
-		unique_ptr<Graphics> polygonGroup;
-
-		bool useOpenCL;
-
-		size_t numCells;
-		size_t numCellPoints;
-		size_t numValues;
-		float* values;
-		cl_float4* pointsVec;
-
-		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
-		{
-			// get the data
-			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
-			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
-			useOpenCL = parameters.get<bool>("use OpenCL");
-			const float isoValue = parameters.get<float>("iso value");
-			const Color color = parameters.get<Color>("color");
-
-			if(field == false)
-			{
-				throw runtime_error("field not set!");
-			}
-			if(grid == false)
-			{
-				throw runtime_error("grid not set!");
-			}
- 
-			auto evaluator = field->makeEvaluator();
-			auto& points = grid->parent().points();
-
-			polygonGroup = makeGraphics("iso surface");
-			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
-
-			//numCells = grid->numCells();
-			numCells = 1000;
-			numCellPoints = 8;
-			numValues = numCells * numCellPoints;
-			int time = 0;
-
-			// load all scalar values into an array
-			values = new float[numValues];
-			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
-			{
-				Cell cell = grid->cell(i);
-				for(size_t j = 0; j < numCellPoints; ++j)
-				{
-					// TODO USE THE CORRECT VALUES
-					Point3 p = points[cell.index(j)];
-					if(evaluator->reset(p, time))
-					{
-					}
-					else
-					{
-							
-					}
-					values[(i * numCellPoints) + j] = (float)(rand() % 10);
-				}
-			}
-			debugLog() << "loading values finished" << endl;
-
-			// load all points into an array
-			pointsVec = new cl_float4[numValues];
-			for(Progress i(*this, "load cells", numCells); i < numCells; ++i)
-			{
-				Cell cell = grid->cell(i);
-				for(size_t j = 0; j < numCellPoints; ++j)
-				{
-					Point3 p = points[cell.index(j)];
-					cl_float4 pVec;
-
-					pVec.s[0] = p[0];
-					pVec.s[1] = p[1];
-					pVec.s[2] = p[2];
-
-					pointsVec[(i * numCellPoints) + j] = pVec;
-				}
-			}
-			debugLog() << "loading points finished" << endl;
-
-			// ==================
-			// CPU implementation
-			// ==================
-			if(useOpenCL == false)
-			{
-				debugLog() << ">>>> not using OpenCL <<<<" << endl;
-
-				// get the cube indices
-				int* indices = new int[numCells];
-				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
-				{
-					int index = 0;
-
-					if (values[(i * numCellPoints) + 0] < isoValue) index |=   1;
-					if (values[(i * numCellPoints) + 1] < isoValue) index |=   2;
-					if (values[(i * numCellPoints) + 2] < isoValue) index |=   4;
-					if (values[(i * numCellPoints) + 3] < isoValue) index |=   8;
-					if (values[(i * numCellPoints) + 4] < isoValue) index |=  16;
-					if (values[(i * numCellPoints) + 5] < isoValue) index |=  32;
-					if (values[(i * numCellPoints) + 6] < isoValue) index |=  64;
-					if (values[(i * numCellPoints) + 7] < isoValue) index |= 128;
-
-					indices[i] = index;
-				}
-				debugLog() << "indexing finished" << endl;
-
-
-				// calculate and draw polygons
-				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
-				{
-					Cell cell = grid->cell(i);
-					Point3 cellPoints[numCellPoints];
-					float cellValues[numCellPoints];
-
-					for(int j = 0; j < numCellPoints; ++j)
-					{
-						cellPoints[j] = points[cell.index(j)];
-						cellValues[j] = values[(i * numCellPoints) +j];
-					}
-
-					int index = indices[i];
-					int indexValue = edgeTable[index];
-					Point3 vertices[12];
-
-					if(indexValue == 0)
-						continue;
-					if(indexValue &    1)
-						vertices[ 0] = interpolate(isoValue, cellPoints[0], cellPoints[1], cellValues[0], cellValues[1]);
-					if(indexValue &    2)
-						vertices[ 1] = interpolate(isoValue, cellPoints[1], cellPoints[2], cellValues[1], cellValues[2]);
-					if(indexValue &    4)
-						vertices[ 2] = interpolate(isoValue, cellPoints[2], cellPoints[3], cellValues[2], cellValues[3]);
-					if(indexValue &    8)
-						vertices[ 3] = interpolate(isoValue, cellPoints[3], cellPoints[0], cellValues[3], cellValues[0]);
-					if(indexValue &   16)
-						vertices[ 4] = interpolate(isoValue, cellPoints[4], cellPoints[5], cellValues[4], cellValues[5]);
-					if(indexValue &   32)
-						vertices[ 5] = interpolate(isoValue, cellPoints[5], cellPoints[6], cellValues[5], cellValues[6]);
-					if(indexValue &   64)
-						vertices[ 6] = interpolate(isoValue, cellPoints[6], cellPoints[7], cellValues[6], cellValues[7]);
-					if(indexValue &  128)
-						vertices[ 7] = interpolate(isoValue, cellPoints[7], cellPoints[4], cellValues[7], cellValues[4]);
-					if(indexValue &  256)
-						vertices[ 8] = interpolate(isoValue, cellPoints[0], cellPoints[4], cellValues[0], cellValues[4]);
-					if(indexValue &  512)
-						vertices[ 9] = interpolate(isoValue, cellPoints[1], cellPoints[5], cellValues[1], cellValues[5]);
-					if(indexValue & 1024)
-						vertices[10] = interpolate(isoValue, cellPoints[2], cellPoints[6], cellValues[2], cellValues[6]);
-					if(indexValue & 2048)
-						vertices[11] = interpolate(isoValue, cellPoints[3], cellPoints[7], cellValues[3], cellValues[7]);
-
-
-					for(int j = 0; triTable[index][j] != -1; j = j+3)
-					{
-						vector<Point3> triPoints;
-						triPoints.push_back(vertices[triTable[index][j    ]]);
-						triPoints.push_back(vertices[triTable[index][j + 1]]);
-						triPoints.push_back(vertices[triTable[index][j + 2]]);
-
-						polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
-					}
-				}
-				debugLog() << "polygonization finished" << endl;
-
-				// free memory
-				delete[] indices;
-			}
 
 			// =====================
 			// OpenCL implementation
@@ -397,6 +227,7 @@ namespace MC
 
 
 				// draw the triangles
+				polygonGroup = makeGraphics("iso surface");
 				for(size_t i = 0; i < numCells; ++i)
 				{
 					int index = indices[i];
@@ -427,10 +258,192 @@ namespace MC
 				delete[] triPoints;
 				delete[] indices;
 			}
+		}
+
+		mutex mMutex;
+		Window<OptionsWindow> mWindow;
+		unique_ptr<Graphics> polygonGroup;
+
+		bool useOpenCL;
+		float maxIsoValue;
+
+		size_t numCells;
+		size_t numCellPoints;
+		size_t numValues;
+		float* values;
+		cl_float4* pointsVec;
+
+		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
+		{
+			// get the data
+			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
+			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
+			//useOpenCL = parameters.get<bool>("use OpenCL");
+			useOpenCL = true;
+			maxIsoValue = parameters.get<float>("max iso value");
+			const Color color = parameters.get<Color>("color");
+
+			if(field == false)
+			{
+				throw runtime_error("field not set!");
+			}
+			if(grid == false)
+			{
+				throw runtime_error("grid not set!");
+			}
+ 
+			auto evaluator = field->makeEvaluator();
+			auto& points = grid->parent().points();
+
+			polygonGroup = makeGraphics("iso surface");
+			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
+
+			//numCells = grid->numCells();
+			numCells = 1000;
+			numCellPoints = 8;
+			numValues = numCells * numCellPoints;
+			int time = 0;
+
+			// load all scalar values into an array
+			values = new float[numValues];
+			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
+			{
+				Cell cell = grid->cell(i);
+				for(size_t j = 0; j < numCellPoints; ++j)
+				{
+					// TODO USE THE CORRECT VALUES
+					Point3 p = points[cell.index(j)];
+					if(evaluator->reset(p, time))
+					{
+					}
+					else
+					{
+							
+					}
+					values[(i * numCellPoints) + j] = (float)(rand() % 10);
+				}
+			}
+			debugLog() << "loading values finished" << endl;
+
+			// load all points into an array
+			pointsVec = new cl_float4[numValues];
+			for(Progress i(*this, "load cells", numCells); i < numCells; ++i)
+			{
+				Cell cell = grid->cell(i);
+				for(size_t j = 0; j < numCellPoints; ++j)
+				{
+					Point3 p = points[cell.index(j)];
+					cl_float4 pVec;
+
+					pVec.s[0] = p[0];
+					pVec.s[1] = p[1];
+					pVec.s[2] = p[2];
+
+					pointsVec[(i * numCellPoints) + j] = pVec;
+				}
+			}
+			debugLog() << "loading points finished" << endl;
+
+			// polygonizes once at startup
+			size_t startValue = 0;
+			polygonize(startValue);
+
+
+			// ==================
+			// CPU implementation
+			// ==================
+
+			/*
+			if(useOpenCL == false)
+			{
+				debugLog() << ">>>> not using OpenCL <<<<" << endl;
+
+				// get the cube indices
+				int* indices = new int[numCells];
+				for(Progress i(*this, "calculating indices", numCells); i < numCells; ++i)
+				{
+					int index = 0;
+
+					if (values[(i * numCellPoints) + 0] < isoValue) index |=   1;
+					if (values[(i * numCellPoints) + 1] < isoValue) index |=   2;
+					if (values[(i * numCellPoints) + 2] < isoValue) index |=   4;
+					if (values[(i * numCellPoints) + 3] < isoValue) index |=   8;
+					if (values[(i * numCellPoints) + 4] < isoValue) index |=  16;
+					if (values[(i * numCellPoints) + 5] < isoValue) index |=  32;
+					if (values[(i * numCellPoints) + 6] < isoValue) index |=  64;
+					if (values[(i * numCellPoints) + 7] < isoValue) index |= 128;
+
+					indices[i] = index;
+				}
+				debugLog() << "indexing finished" << endl;
+
+
+				// calculate and draw polygons
+				for(Progress i(*this, "polygonizing", numCells); i < numCells; ++i)
+				{
+					Cell cell = grid->cell(i);
+					Point3 cellPoints[numCellPoints];
+					float cellValues[numCellPoints];
+
+					for(int j = 0; j < numCellPoints; ++j)
+					{
+						cellPoints[j] = points[cell.index(j)];
+						cellValues[j] = values[(i * numCellPoints) +j];
+					}
+
+					int index = indices[i];
+					int indexValue = edgeTable[index];
+					Point3 vertices[12];
+
+					if(indexValue == 0)
+						continue;
+					if(indexValue &    1)
+						vertices[ 0] = interpolate(isoValue, cellPoints[0], cellPoints[1], cellValues[0], cellValues[1]);
+					if(indexValue &    2)
+						vertices[ 1] = interpolate(isoValue, cellPoints[1], cellPoints[2], cellValues[1], cellValues[2]);
+					if(indexValue &    4)
+						vertices[ 2] = interpolate(isoValue, cellPoints[2], cellPoints[3], cellValues[2], cellValues[3]);
+					if(indexValue &    8)
+						vertices[ 3] = interpolate(isoValue, cellPoints[3], cellPoints[0], cellValues[3], cellValues[0]);
+					if(indexValue &   16)
+						vertices[ 4] = interpolate(isoValue, cellPoints[4], cellPoints[5], cellValues[4], cellValues[5]);
+					if(indexValue &   32)
+						vertices[ 5] = interpolate(isoValue, cellPoints[5], cellPoints[6], cellValues[5], cellValues[6]);
+					if(indexValue &   64)
+						vertices[ 6] = interpolate(isoValue, cellPoints[6], cellPoints[7], cellValues[6], cellValues[7]);
+					if(indexValue &  128)
+						vertices[ 7] = interpolate(isoValue, cellPoints[7], cellPoints[4], cellValues[7], cellValues[4]);
+					if(indexValue &  256)
+						vertices[ 8] = interpolate(isoValue, cellPoints[0], cellPoints[4], cellValues[0], cellValues[4]);
+					if(indexValue &  512)
+						vertices[ 9] = interpolate(isoValue, cellPoints[1], cellPoints[5], cellValues[1], cellValues[5]);
+					if(indexValue & 1024)
+						vertices[10] = interpolate(isoValue, cellPoints[2], cellPoints[6], cellValues[2], cellValues[6]);
+					if(indexValue & 2048)
+						vertices[11] = interpolate(isoValue, cellPoints[3], cellPoints[7], cellValues[3], cellValues[7]);
+
+
+					for(int j = 0; triTable[index][j] != -1; j = j+3)
+					{
+						vector<Point3> triPoints;
+						triPoints.push_back(vertices[triTable[index][j    ]]);
+						triPoints.push_back(vertices[triTable[index][j + 1]]);
+						triPoints.push_back(vertices[triTable[index][j + 2]]);
+
+						polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
+					}
+				}
+				debugLog() << "polygonization finished" << endl;
+
+				// free memory
+				delete[] indices;
+			}
+
+			*/
 
 			// free memory
-			delete[] values;
-			delete[] pointsVec;
+			//delete[] values;
+			//delete[] pointsVec;
 		}
 	};
 
