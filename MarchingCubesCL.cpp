@@ -87,179 +87,173 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			// =====================
-			// OpenCL implementation
-			// =====================
-			if(useOpenCL == true)
+			debugLog() << ">>>> using OpenCL <<<<" << endl;
+
+			cl_int error = CL_SUCCESS;
+			cl_ulong infoNumber = 0;
+			string infoString = "";
+
+			// get the platforms
+			vector<cl::Platform> platforms;
+			cl::Platform::get(&platforms);
+
+			for(int i = 0; i < platforms.size(); i++)
 			{
-				debugLog() << ">>>> using OpenCL <<<<" << endl;
-
-				cl_int error = CL_SUCCESS;
-				cl_ulong infoNumber = 0;
-				string infoString = "";
-
-				// get the platforms
-				vector<cl::Platform> platforms;
-				cl::Platform::get(&platforms);
-
-				for(int i = 0; i < platforms.size(); i++)
-				{
-					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
-					debugLog() << "platform #" << i << " name: " << infoString << endl;
-					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
-					debugLog() << "platform #" << i << " version: " << infoString << endl;
-				}
-
-				// create a context
-				cl_context_properties properties[3] = { 
-					CL_CONTEXT_PLATFORM, 
-					(cl_context_properties)(platforms[0])(), 
-					0 
-				};
-				cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
-				printError(error, "context");
-
-				// get the devices
-				vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-				if(devices.size() == 0)
-				{
-					throw runtime_error("No devices found!");
-				}
-				for(int i = 0; i < devices.size(); i++)
-				{
-					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
-					debugLog() << "device #"<< i << " name: " << infoString << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
-					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
-					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
-				}
-
-				cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
-
-				// prepare the kernel
-				string s = getKernelSource();
-				cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
-
-				cl::Program program = cl::Program(context, source);
-				error = program.build(devices);
-				printError(error, "build");
-
-				program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
-				debugLog() << "build info: " << infoString << endl;
-
-				cl::Kernel kernel(program, "marchingCubes");
-
-				// prepare buffers
-				int* triTableArray = new int[256 * 16];
-				for(int i = 0; i < 256; ++i)
-				{
-					for(int j = 0; j < 16; ++j)
-					{
-						triTableArray[(i * 16) + j] = triTable[i][j];
-					}
-				}
-
-				cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
-				error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
-				printError(error, "bufferEdgeTable");
-
-				cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
-				error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
-				printError(error, "bufferTriTable");
-
-				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
-				error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
-				printError(error, "bufferValues");
-
-				cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
-				error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
-				printError(error, "bufferPointsVec");
-
-				cl::Buffer bufferTriPoints = cl::Buffer(context, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
-
-				cl::Buffer bufferIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
-				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
-				cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
-
-				kernel.setArg(0, isoValue);
-				kernel.setArg(1, bufferEdgeTable);
-				kernel.setArg(2, bufferTriTable);
-				kernel.setArg(3, bufferValues);
-				kernel.setArg(4, bufferPointsVec);
-				kernel.setArg(5, bufferTriPoints);
-				kernel.setArg(6, bufferIndices);
-
-				kernel.setArg(7, bufferFloatTest);
-				kernel.setArg(8, bufferIntTest);
-
-				// run the kernel
-				cl::NDRange global(numCells);
-				cl::NDRange local(1);
-				queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
-
-				// get the results
-				float* floatTest = new float[numCells];
-				queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
-				for(int i = 0; i < numCells; i++)
-				{
-					//debugLog() << floatTest[i] << endl;
-				}
-
-				int* intTest = new int[numCells];
-				queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
-				for(int i = 0; i < numCells; i++)
-				{
-					//debugLog() << intTest[i] << endl;
-				}
-				
-				cl_float4* triPoints = new cl_float4[12 * numCells];
-				queue.enqueueReadBuffer(bufferTriPoints, CL_TRUE, 0, 12 * numCells * sizeof(cl_float4), triPoints);
-
-				int* indices = new int[numCells];
-				queue.enqueueReadBuffer(bufferIndices, CL_TRUE, 0, numCells * sizeof(int), indices);
-
-
-				// draw the triangles
-				polygonGroup = makeGraphics("iso surface");
-				for(size_t i = 0; i < numCells; ++i)
-				{
-					int index = indices[i];
-					for(int j = 0; triTable[index][j] != -1; j = j+3)
-					{
-						vector<cl_float4> triPointsVec;
-						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 0])]);
-						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 1])]);
-						triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 2])]);
-
-						vector<Point3> triPoints;
-						for(int k = 0; k < 3; ++k)
-						{
-							Point3 p;
-							p[0] = triPointsVec[k].s[0];
-							p[1] = triPointsVec[k].s[1];
-							p[2] = triPointsVec[k].s[2];
-							triPoints.push_back(p);
-						}
-
-						polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
-					}
-				}
-
-				// free memory
-				delete[] floatTest;
-				delete[] intTest;
-				delete[] triPoints;
-				delete[] indices;
+				platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
+				debugLog() << "platform #" << i << " name: " << infoString << endl;
+				platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
+				debugLog() << "platform #" << i << " version: " << infoString << endl;
 			}
+
+			// create a context
+			cl_context_properties properties[3] = { 
+				CL_CONTEXT_PLATFORM, 
+				(cl_context_properties)(platforms[0])(), 
+				0 
+			};
+			cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
+			printError(error, "context");
+
+			// get the devices
+			vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+			if(devices.size() == 0)
+			{
+				throw runtime_error("No devices found!");
+			}
+			for(int i = 0; i < devices.size(); i++)
+			{
+				devices[i].getInfo(CL_DEVICE_NAME, &infoString);
+				debugLog() << "device #"<< i << " name: " << infoString << endl;
+				devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
+				debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
+				devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
+				debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
+				devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
+				debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
+				devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
+				debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
+				devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
+				debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
+			}
+
+			cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
+
+			// prepare the kernel
+			string s = getKernelSource();
+			cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
+
+			cl::Program program = cl::Program(context, source);
+			error = program.build(devices);
+			printError(error, "build");
+
+			program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
+			debugLog() << "build info: " << infoString << endl;
+
+			cl::Kernel kernel(program, "marchingCubes");
+
+			// prepare buffers
+			int* triTableArray = new int[256 * 16];
+			for(int i = 0; i < 256; ++i)
+			{
+				for(int j = 0; j < 16; ++j)
+				{
+					triTableArray[(i * 16) + j] = triTable[i][j];
+				}
+			}
+
+			cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
+			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+			printError(error, "bufferEdgeTable");
+
+			cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
+			error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
+			printError(error, "bufferTriTable");
+
+			cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+			error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+			printError(error, "bufferValues");
+
+			cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+			printError(error, "bufferPointsVec");
+
+			cl::Buffer bufferTriPoints = cl::Buffer(context, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
+
+			cl::Buffer bufferIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+
+			cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
+			cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+
+
+			kernel.setArg(0, isoValue);
+			kernel.setArg(1, bufferEdgeTable);
+			kernel.setArg(2, bufferTriTable);
+			kernel.setArg(3, bufferValues);
+			kernel.setArg(4, bufferPointsVec);
+			kernel.setArg(5, bufferTriPoints);
+			kernel.setArg(6, bufferIndices);
+
+			kernel.setArg(7, bufferFloatTest);
+			kernel.setArg(8, bufferIntTest);
+
+			// run the kernel
+			cl::NDRange global(numCells);
+			cl::NDRange local(1);
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+
+			// get the results
+			float* floatTest = new float[numCells];
+			queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
+			for(int i = 0; i < numCells; i++)
+			{
+				//debugLog() << floatTest[i] << endl;
+			}
+
+			int* intTest = new int[numCells];
+			queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
+			for(int i = 0; i < numCells; i++)
+			{
+				//debugLog() << intTest[i] << endl;
+			}
+				
+			cl_float4* triPoints = new cl_float4[12 * numCells];
+			queue.enqueueReadBuffer(bufferTriPoints, CL_TRUE, 0, 12 * numCells * sizeof(cl_float4), triPoints);
+
+			int* indices = new int[numCells];
+			queue.enqueueReadBuffer(bufferIndices, CL_TRUE, 0, numCells * sizeof(int), indices);
+
+
+			// draw the triangles
+			polygonGroup = makeGraphics("iso surface");
+			for(size_t i = 0; i < numCells; ++i)
+			{
+				int index = indices[i];
+				for(int j = 0; triTable[index][j] != -1; j = j+3)
+				{
+					vector<cl_float4> triPointsVec;
+					triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 0])]);
+					triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 1])]);
+					triPointsVec.push_back(triPoints[(12 * i) + (triTable[index][j + 2])]);
+
+					vector<Point3> triPoints;
+					for(int k = 0; k < 3; ++k)
+					{
+						Point3 p;
+						p[0] = triPointsVec[k].s[0];
+						p[1] = triPointsVec[k].s[1];
+						p[2] = triPointsVec[k].s[2];
+						triPoints.push_back(p);
+					}
+
+					polygonGroup->primitive().add(Primitive::TRIANGLES).setColor(color).setVertices(triPoints);
+				}
+			}
+
+			// free memory
+			delete[] floatTest;
+			delete[] intTest;
+			delete[] triPoints;
+			delete[] indices;
 		}
 
 		mutex mMutex;
@@ -280,8 +274,6 @@ namespace MC
 			// get the data
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
-			//useOpenCL = parameters.get<bool>("use OpenCL");
-			useOpenCL = true;
 			maxIsoValue = parameters.get<float>("max iso value");
 			const Color color = parameters.get<Color>("color");
 
