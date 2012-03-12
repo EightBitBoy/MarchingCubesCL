@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <utility>
 #include <fstream>
+#include <boost/thread/mutex.hpp>
 #include <fantom/algorithm.hpp>
 #include <fantom/graphics.hpp>
 #include <fantom/fields.hpp>
@@ -12,6 +13,7 @@
 #define __CL_ENABLE_EXCEPTIONS
 
 using namespace std;
+using namespace boost;
 using namespace fantom;
 
 namespace MC
@@ -54,7 +56,41 @@ namespace MC
 			}
 		}
 
-		MarchingCubes(const Parameters& parameters): Algorithm(parameters)
+		struct OptionsWindow
+		{
+
+			DockWindow mWindow;
+			BoxLayout mLayout;
+			LineEdit mText;
+			PushButton mButton;
+			MarchingCubes& mAlgo;
+
+			OptionsWindow(MainWindow& mainWindow, MarchingCubes& algo)
+				: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
+				mLayout(mWindow.getWidgetHolder(), false),
+				mText(mLayout.addWidgetHolder()),
+				mButton(mLayout.addWidgetHolder(), "Send", bind(&OptionsWindow::send, this)),
+				mAlgo(algo)
+			{
+			}
+
+			void send()
+			{
+				mAlgo.scheduleJob(bind(&MarchingCubes::print, &mAlgo, mText.get()));
+			}
+
+		};
+
+		void print(const string& name)
+		{
+			unique_lock<mutex> lock(mMutex);
+			infoLog() << name << endl;
+		}
+
+		mutex mMutex;
+		Window<OptionsWindow> mWindow;
+
+		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
 			// get the data
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
@@ -76,12 +112,10 @@ namespace MC
 			auto& points = grid->parent().points();
 
 			polygonGroup = makeGraphics("iso surface");
-			polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
+			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
-
-			// TODO use this!
 			size_t numCells = grid->numCells();
-			//size_t numCells = 20;
+			//size_t numCells = 1000;
 			const size_t numCellPoints = 8;
 			size_t numValues = numCells * numCellPoints;
 			int time = 0;
