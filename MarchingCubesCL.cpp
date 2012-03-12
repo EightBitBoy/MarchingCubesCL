@@ -86,10 +86,7 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			// get the platforms
-			vector<cl::Platform> platforms;
-			cl::Platform::get(&platforms);
-
+			/*
 			for(int i = 0; i < platforms.size(); i++)
 			{
 				platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
@@ -97,18 +94,13 @@ namespace MC
 				platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
 				debugLog() << "platform #" << i << " version: " << infoString << endl;
 			}
+			*/
 
 			// create a context
-			cl_context_properties properties[3] = { 
-				CL_CONTEXT_PLATFORM, 
-				(cl_context_properties)(platforms[0])(), 
-				0 
-			};
-			cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
-			printError(error, "context");
+
 
 			// get the devices
-			vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+			vector<cl::Device> devices = cont.getInfo<CL_CONTEXT_DEVICES>();
 			if(devices.size() == 0)
 			{
 				throw runtime_error("No devices found!");
@@ -132,13 +124,13 @@ namespace MC
 			}
 			*/
 
-			cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
+			queue = cl::CommandQueue(cont, devices[0]);
 
 			// prepare the kernel
 			string s = getKernelSource();
 			cl::Program::Sources source(1, std::make_pair(s.c_str(), s.length()+1));
 
-			cl::Program program = cl::Program(context, source);
+			cl::Program program = cl::Program(cont, source);
 			error = program.build(devices);
 			printError(error, "build");
 
@@ -148,25 +140,17 @@ namespace MC
 			cl::Kernel kernel(program, "marchingCubes");
 
 			// prepare buffers
-			cl::Buffer bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
-			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
-			printError(error, "bufferEdgeTable");
-
-			cl::Buffer bufferTriTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
-			error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
-			printError(error, "bufferTriTable");
-
-			cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+			cl::Buffer bufferValues = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues * sizeof(float));
 			error = queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
 			printError(error, "bufferValues");
 
-			cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+			cl::Buffer bufferPointsVec = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
 			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 			printError(error, "bufferPointsVec");
 
-			cl::Buffer bufferTriPoints = cl::Buffer(context, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
+			cl::Buffer bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
 
-			cl::Buffer bufferIndices = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
+			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
 			//cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
 			//cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
@@ -262,7 +246,13 @@ namespace MC
 		cl_ulong infoNumber;
 		string infoString;
 
+		vector<cl::Platform> platforms;
+		cl::Context cont;
 		int* triTableArray;
+
+		cl::CommandQueue queue;
+		cl::Buffer bufferEdgeTable;
+		cl::Buffer bufferTriTable;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
@@ -341,6 +331,29 @@ namespace MC
 					triTableArray[(i * 16) + j] = triTable[i][j];
 				}
 			}
+
+			// prepare everything
+			cl::Platform::get(&platforms);
+
+			cl_context_properties properties[3] = { 
+				CL_CONTEXT_PLATFORM, 
+				(cl_context_properties)(platforms[0])(), 
+				0 
+			};
+			cl::Context context(CL_DEVICE_TYPE_GPU, properties, NULL, NULL, &error);
+			printError(error, "context");
+
+			cont = context;
+
+			// prepare buffers
+			bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
+			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
+			printError(error, "bufferEdgeTable");
+
+			bufferTriTable = cl::Buffer(cont, CL_MEM_READ_ONLY, 256 * 16 * sizeof(int));
+			error = queue.enqueueWriteBuffer(bufferTriTable, CL_TRUE, 0, 256 * 16 * sizeof(int), triTableArray);
+			printError(error, "bufferTriTable");
+
 			// polygonizes once at startup
 			size_t startValue = 0;
 			polygonize(startValue);
