@@ -10,14 +10,16 @@ std::string getKernelSource()
 
 		__kernel void marchingCubes(
 			float isoValue,
-			__global float* values,
-			__global float4* pointsVec,
-			__global float* OUTTEST
+			__global float* floatTest,
+			__global int* intTest
 		)
 		{
 			int i = get_global_id(0);
 
-			OUTTEST[i] = pointsVec[i].x;
+
+
+			floatTest[i] = isoValue;
+			intTest[i] = i;
 		}
 	);
 

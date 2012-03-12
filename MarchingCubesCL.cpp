@@ -81,7 +81,7 @@ namespace MC
 
 			// TODO use this!
 			//size_t numCells = grid->numCells();
-			size_t numCells = 1000;
+			size_t numCells = 50;
 			const size_t numCellPoints = 8;
 			size_t numValues = numCells * numCellPoints;
 			int time = 0;
@@ -285,21 +285,21 @@ namespace MC
 
 				// prepare buffers
 
-				cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
-				cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
+				//cl::Buffer bufferValues = cl::Buffer(context, CL_MEM_READ_ONLY, numValues * sizeof(float));
+				//cl::Buffer bufferPointsVec = cl::Buffer(context, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
 				//cl::Buffer bufferEdgeTable
 				//cl::Buffer bufferTriTable
 
-				cl::Buffer bufferOUTTEST = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
+				cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
+				cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
-				queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
-				queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
+				//queue.enqueueWriteBuffer(bufferValues, CL_TRUE, 0, numValues * sizeof(float), values);
+				//queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 
 
 				kernel.setArg(0, isoValue);
-				kernel.setArg(1, bufferValues);
-				kernel.setArg(2, bufferPointsVec);
-				kernel.setArg(3, bufferOUTTEST);
+				kernel.setArg(1, bufferFloatTest);
+				kernel.setArg(2, bufferIntTest);
 
 				// run the kernel
 				cl::NDRange global(numCells);
@@ -308,11 +308,18 @@ namespace MC
 
 				// get the results
 
-				float* OUTTEST = new float[numCells];
-				queue.enqueueReadBuffer(bufferOUTTEST, CL_TRUE, 0, numCells * sizeof(float), OUTTEST);
+				float* floatTest = new float[numCells];
+				queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
 				for(int i = 0; i < numCells; i++)
 				{
-					debugLog() << OUTTEST[i] << endl;
+					debugLog() << floatTest[i] << endl;
+				}
+
+				int* intTest = new int[numCells];
+				queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
+				for(int i = 0; i < numCells; i++)
+				{
+					debugLog() << intTest[i] << endl;
 				}
 				
 				// free memory
