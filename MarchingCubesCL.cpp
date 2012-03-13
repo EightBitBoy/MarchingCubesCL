@@ -263,6 +263,14 @@ namespace MC
 
 			// load all scalar values into an array
 			values = new float[numValues];
+
+			/*
+			for(size_t i = 0; i < numCells; ++i)
+			{
+				values[i] = discreteEvaluator->value(i)();
+			}
+			*/
+
 			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
 			{
 				Cell cell = grid->cell(i);
