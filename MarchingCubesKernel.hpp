@@ -46,6 +46,7 @@ std::string getKernelSource()
 			if (values[(i * 8) + 3] < isoValue) index |= 128;
 			indices[i] = index;
 
+
 			if(edgeTable[index] &    1)
 				triPoints[(i * 12) +  0] = interpolate(isoValue, pointsVec[(i * 8) + 7], pointsVec[(i * 8) + 6], values[(i * 8) + 7], values[(i * 8) + 6]);
 			if(edgeTable[index] &    2)
