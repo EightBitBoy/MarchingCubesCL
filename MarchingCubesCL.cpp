@@ -266,10 +266,15 @@ namespace MC
 
 			/*
 			for(size_t i = 0; i < numCells; ++i)
-			{
-				values[i] = discreteEvaluator->value(i)();
+			{	
+				Cell cell = grid->cell(i);
+				for(size_t j = 0; j < numCellPoints; ++j)
+				{
+					values[(i * numCellPoints) + j] = discreteEvaluator->value(i)();
+				}
 			}
 			*/
+			
 
 			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
 			{
