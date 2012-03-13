@@ -11,7 +11,7 @@
 #include "MarchingCubesTables.hpp"
 
 #define __CL_ENABLE_EXCEPTIONS
-#define SENSITIVITY 100
+#define SENSITIVITY 1000
 
 using namespace std;
 using namespace boost;
@@ -264,16 +264,21 @@ namespace MC
 			// load all scalar values into an array
 			values = new float[numValues];
 
-			/*
+			
 			for(size_t i = 0; i < numCells; ++i)
 			{	
 				Cell cell = grid->cell(i);
+
+				values[(i * numCellPoints) + j] = discreteEvaluator->value(cell.index(j))();
+
+				/*
 				for(size_t j = 0; j < numCellPoints; ++j)
 				{
-					values[(i * numCellPoints) + j] = discreteEvaluator->value(i)();
+					values[(i * numCellPoints) + j] = discreteEvaluator->value(cell.index(j))();
 				}
+				*/
 			}
-			*/
+			
 			
 
 			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
@@ -296,8 +301,8 @@ namespace MC
 					else
 					{
 					}
-					*/
 					values[(i * numCellPoints) + j] = (float)(rand() % 10);
+					*/
 				}
 			}
 			debugLog() << "loading values finished" << endl;
