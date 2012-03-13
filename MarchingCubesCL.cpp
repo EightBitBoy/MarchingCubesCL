@@ -269,13 +269,23 @@ namespace MC
 			{	
 				Cell cell = grid->cell(i);
 
-				//values[(i * numCellPoints) + j] = discreteEvaluator->value(cell.index(j))();
+				/*
+				*/
+				values[(i * numCellPoints) + 0] = discreteEvaluator->value(cell.index(0))();
+				values[(i * numCellPoints) + 1] = discreteEvaluator->value(cell.index(1))();
+				values[(i * numCellPoints) + 2] = discreteEvaluator->value(cell.index(2))();
+				values[(i * numCellPoints) + 3] = discreteEvaluator->value(cell.index(3))();
 
+				values[(i * numCellPoints) + 4] = discreteEvaluator->value(cell.index(4))();
+				values[(i * numCellPoints) + 5] = discreteEvaluator->value(cell.index(5))();
+				values[(i * numCellPoints) + 6] = discreteEvaluator->value(cell.index(6))();
+				values[(i * numCellPoints) + 7] = discreteEvaluator->value(cell.index(7))();
+
+				/*
 				for(size_t j = 0; j < numCellPoints; ++j)
 				{
 					values[(i * numCellPoints) + j] = discreteEvaluator->value(cell.index(j))();
 				}
-				/*
 				*/
 			}
 			
