@@ -28,6 +28,7 @@ namespace MC
 		{
 			Options()
 			{
+				add<const TensorFieldGridBased<3, Scalar>*>("tensor field", "", 0);
 				add<const TensorField<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
 				//add<bool>("use OpenCL", "switch between OpenCL (GPU) and CPU implementations", false);
@@ -230,6 +231,7 @@ namespace MC
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
 			// get the data
+			const TensorFieldGridBased<3, Scalar>* tensorField = parameters.get<const TensorFieldGridBased<3, Scalar>*>("tensor field");
 			const TensorField<3, Scalar>* field = parameters.get<const TensorField<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			maxIsoValue = parameters.get<float>("max iso value");
@@ -248,6 +250,8 @@ namespace MC
 			auto evaluator = field->makeEvaluator();
 			auto& points = grid->parent().points();
 
+			auto discreteEvaluator = tensorField->makeDiscreteEvaluator();
+
 			polygonGroup = makeGraphics("iso surface");
 			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
@@ -264,6 +268,10 @@ namespace MC
 				Cell cell = grid->cell(i);
 				for(size_t j = 0; j < numCellPoints; ++j)
 				{
+					/*
+					values[(i * numCellPoints) + j] = discreteEvaluator->value((i * numCellPoints) + j)();
+					*/
+
 					// TODO USE THE CORRECT VALUES
 					Point3 p = points[cell.index(j)];
 					if(evaluator->reset(p, time))
