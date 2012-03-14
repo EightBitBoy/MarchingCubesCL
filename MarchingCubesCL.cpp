@@ -248,7 +248,6 @@ namespace MC
 			auto& points = grid->parent().points();
 
 			polygonGroup = makeGraphics("iso surface");
-			//polygonGroup->primitive().addSphere(Point3(0, 0, 0), 0.5, color);
 
 			numCells = grid->numCells();
 			//numCells = 1000;
@@ -258,14 +257,10 @@ namespace MC
 
 			// load all scalar values into an array
 			values = new float[numValues];
-
-			
-			for(size_t i = 0; i < numCells; ++i)
+			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
 			{	
 				Cell cell = grid->cell(i);
 
-				/*
-				*/
 				values[(i * numCellPoints) + 0] = discreteEvaluator->value(cell.index(0))();
 				values[(i * numCellPoints) + 1] = discreteEvaluator->value(cell.index(1))();
 				values[(i * numCellPoints) + 2] = discreteEvaluator->value(cell.index(2))();
@@ -275,40 +270,6 @@ namespace MC
 				values[(i * numCellPoints) + 5] = discreteEvaluator->value(cell.index(5))();
 				values[(i * numCellPoints) + 6] = discreteEvaluator->value(cell.index(6))();
 				values[(i * numCellPoints) + 7] = discreteEvaluator->value(cell.index(7))();
-
-				/*
-				for(size_t j = 0; j < numCellPoints; ++j)
-				{
-					values[(i * numCellPoints) + j] = discreteEvaluator->value(cell.index(j))();
-				}
-				*/
-			}
-			
-			
-
-			for(Progress i(*this, "load values", numCells); i < numCells; ++i)
-			{
-				Cell cell = grid->cell(i);
-				for(size_t j = 0; j < numCellPoints; ++j)
-				{
-					/*
-					values[(i * numCellPoints) + j] = discreteEvaluator->value((i * numCellPoints) + j)();
-					*/
-
-					// TODO USE THE CORRECT VALUES
-					// TODO nothing happens here
-					/*
-					Point3 p = points[cell.index(j)];
-					if(evaluator->reset(p, time))
-					{
-						values[(i * numCellPoints) + j] = evaluator->value();
-					}
-					else
-					{
-					}
-					values[(i * numCellPoints) + j] = (float)(rand() % 10);
-					*/
-				}
 			}
 			debugLog() << "loading values finished" << endl;
 
