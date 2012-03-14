@@ -54,6 +54,10 @@ namespace MC
 			{
 				debugLog() << description << " ERROR: " << error << endl;
 			}
+			if(error == CL_MEM_OBJECT_ALLOCATION_FAILURE)
+			{
+				throw runtime_error("MEMORY ALLOCATION FAILURE");
+			}
 		}
 
 		struct OptionsWindow
@@ -189,10 +193,12 @@ namespace MC
 			polygonGroup = makeGraphics("iso surface");
 
 			numCells = grid->numCells();
-			//numCells = 1000;
+			//numCells = 2000;
 			numCellPoints = 8;
 			numValues = numCells * numCellPoints;
 			int time = 0;
+			debugLog() << "cells: " << numCells << endl;
+			debugLog() << "points: " << numValues << endl;
 
 			// load all scalar values into an array
 			values = new float[numValues];
@@ -335,6 +341,10 @@ namespace MC
 			// polygonizes once at startup
 			size_t startValue = 0;
 			polygonize(startValue);
+		}
+
+		~MarchingCubes()
+		{
 		}
 	};
 
