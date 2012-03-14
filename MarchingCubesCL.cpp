@@ -113,15 +113,9 @@ namespace MC
 				}
 			}
 
-			// prepare output buffers
-			cl::Buffer bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
-			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
-			kernel.setArg(0, isoValue);
-			kernel.setArg(5, bufferTriPoints);
-			kernel.setArg(6, bufferIndices);
-
 			// run the kernel
+			kernel.setArg(0, isoValue);
+
 			cl::NDRange global(numCells);
 			cl::NDRange local(1);
 			queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
@@ -194,6 +188,9 @@ namespace MC
 		cl::Buffer bufferTriTable;
 		cl::Buffer bufferValues;
 		cl::Buffer bufferPointsVec;
+
+		cl::Buffer bufferTriPoints;
+		cl::Buffer bufferIndices;
 
 		MarchingCubes(const Parameters& parameters): Algorithm(parameters), mWindow(*this)
 		{
@@ -322,14 +319,18 @@ namespace MC
 			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 			printError(error, "bufferPointsVec");
 
+			// prepare output buffers
+			bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
+			bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
 			// set kernel arguments
-			
 			// Arg1 is set in the polygonize function
 			kernel.setArg(1, bufferEdgeTable);
 			kernel.setArg(2, bufferTriTable);
 			kernel.setArg(3, bufferValues);
 			kernel.setArg(4, bufferPointsVec);
+			kernel.setArg(5, bufferTriPoints);
+			kernel.setArg(6, bufferIndices);
 
 			// polygonizes once at startup
 			size_t startValue = 0;
