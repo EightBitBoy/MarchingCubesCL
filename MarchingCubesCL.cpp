@@ -86,33 +86,6 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			if(info == true)
-			{
-				for(int i = 0; i < platforms.size(); i++)
-				{
-					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
-					debugLog() << "platform #" << i << " name: " << infoString << endl;
-					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
-					debugLog() << "platform #" << i << " version: " << infoString << endl;
-				}
-
-				for(int i = 0; i < devices.size(); i++)
-				{
-					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
-					debugLog() << "device #"<< i << " name: " << infoString << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
-					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
-					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
-					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
-					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
-				}
-			}
-
 			// run the kernel
 			kernel.setArg(0, isoValue);
 
@@ -288,6 +261,33 @@ namespace MC
 			}
 
 			queue = cl::CommandQueue(context, devices[0]);
+
+			if(info == true)
+			{
+				for(int i = 0; i < platforms.size(); i++)
+				{
+					platforms[i].getInfo(CL_PLATFORM_NAME, &infoString);
+					debugLog() << "platform #" << i << " name: " << infoString << endl;
+					platforms[i].getInfo(CL_PLATFORM_VERSION, &infoString);
+					debugLog() << "platform #" << i << " version: " << infoString << endl;
+				}
+
+				for(int i = 0; i < devices.size(); i++)
+				{
+					devices[i].getInfo(CL_DEVICE_NAME, &infoString);
+					debugLog() << "device #"<< i << " name: " << infoString << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " global memory cache size (MB): " << (infoNumber/1024/1024) << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY, &infoNumber);
+					debugLog() << "device #"<< i << " max clock frequency: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &infoNumber);
+					debugLog() << "device #"<< i << " max compute units: " << infoNumber << endl;
+					devices[i].getInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, &infoNumber);
+					debugLog() << "device #"<< i << " max constant buffer size (KB): " << (infoNumber/1024) << endl;
+				}
+			}
 
 			// prepare the kernel
 			string s = getKernelSource();
