@@ -118,10 +118,6 @@ namespace MC
 			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
 
 			kernel.setArg(0, isoValue);
-			kernel.setArg(1, bufferEdgeTable);
-			kernel.setArg(2, bufferTriTable);
-			kernel.setArg(3, bufferValues);
-			kernel.setArg(4, bufferPointsVec);
 			kernel.setArg(5, bufferTriPoints);
 			kernel.setArg(6, bufferIndices);
 
@@ -327,9 +323,13 @@ namespace MC
 			printError(error, "bufferPointsVec");
 
 
-			// ste kernel arguments
-
-
+			// set kernel arguments
+			
+			// Arg1 is set in the polygonize function
+			kernel.setArg(1, bufferEdgeTable);
+			kernel.setArg(2, bufferTriTable);
+			kernel.setArg(3, bufferValues);
+			kernel.setArg(4, bufferPointsVec);
 
 			// polygonizes once at startup
 			size_t startValue = 0;
