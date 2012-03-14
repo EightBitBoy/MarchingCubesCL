@@ -113,8 +113,6 @@ namespace MC
 				}
 			}
 
-			kernel = cl::Kernel(program, "marchingCubes");
-
 			// prepare output buffers
 			cl::Buffer bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
 			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
@@ -309,7 +307,9 @@ namespace MC
 			program.getBuildInfo(devices[0], CL_PROGRAM_BUILD_LOG, &infoString);
 			debugLog() << "build info: " << infoString << endl;
 
-			// prepare buffers
+			kernel = cl::Kernel(program, "marchingCubes");
+
+			// prepare input buffers
 			bufferEdgeTable = cl::Buffer(context, CL_MEM_READ_ONLY, 256 * sizeof(int));
 			error = queue.enqueueWriteBuffer(bufferEdgeTable, CL_TRUE, 0, 256 * sizeof(int), edgeTable);
 			printError(error, "bufferEdgeTable");
@@ -325,6 +325,11 @@ namespace MC
 			bufferPointsVec = cl::Buffer(cont, CL_MEM_READ_ONLY, numValues *sizeof(cl_float4));
 			error = queue.enqueueWriteBuffer(bufferPointsVec, CL_TRUE, 0, numValues *sizeof(cl_float4), pointsVec);
 			printError(error, "bufferPointsVec");
+
+
+			// ste kernel arguments
+
+
 
 			// polygonizes once at startup
 			size_t startValue = 0;
