@@ -31,7 +31,7 @@ namespace MC
 				add<const TensorFieldGridBased<3, Scalar>*>("field", "", 0);
 				add<const Grid<3>*>("grid", "", 0);
 				add<float>("max iso value", "", 10.0);
-				add<bool>("debug", "provides more output", false);
+				add<bool>("info", "provides more output", false);
 			}
 		};
 
@@ -86,7 +86,7 @@ namespace MC
 			float isoValue = value * (maxIsoValue / SENSITIVITY);
 			Color color = Color(1.0, 0.0, 0.0);
 
-			if(debug == true)
+			if(info == true)
 			{
 				for(int i = 0; i < platforms.size(); i++)
 				{
@@ -113,16 +113,11 @@ namespace MC
 				}
 			}
 
-			cl::Kernel kernel(program, "marchingCubes");
+			kernel = cl::Kernel(program, "marchingCubes");
 
-			// prepare buffers
+			// prepare output buffers
 			cl::Buffer bufferTriPoints = cl::Buffer(cont, CL_MEM_WRITE_ONLY, 12 * numCells * sizeof(cl_float4));
-
 			cl::Buffer bufferIndices = cl::Buffer(cont, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
-			//cl::Buffer bufferFloatTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(float));
-			//cl::Buffer bufferIntTest = cl::Buffer(context, CL_MEM_WRITE_ONLY, numCells * sizeof(int));
-
 
 			kernel.setArg(0, isoValue);
 			kernel.setArg(1, bufferEdgeTable);
@@ -132,31 +127,12 @@ namespace MC
 			kernel.setArg(5, bufferTriPoints);
 			kernel.setArg(6, bufferIndices);
 
-			//kernel.setArg(7, bufferFloatTest);
-			//kernel.setArg(8, bufferIntTest);
-
 			// run the kernel
 			cl::NDRange global(numCells);
 			cl::NDRange local(1);
 			queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
 
 			// get the results
-			/*
-			float* floatTest = new float[numCells];
-			queue.enqueueReadBuffer(bufferFloatTest, CL_TRUE, 0, numCells * sizeof(float), floatTest);
-			for(int i = 0; i < numCells; i++)
-			{
-				debugLog() << floatTest[i] << endl;
-			}
-
-			int* intTest = new int[numCells];
-			queue.enqueueReadBuffer(bufferIntTest, CL_TRUE, 0, numCells * sizeof(int), intTest);
-			for(int i = 0; i < numCells; i++)
-			{
-				debugLog() << intTest[i] << endl;
-			}
-			*/
-				
 			cl_float4* triPoints = new cl_float4[12 * numCells];
 			queue.enqueueReadBuffer(bufferTriPoints, CL_TRUE, 0, 12 * numCells * sizeof(cl_float4), triPoints);
 
@@ -190,9 +166,6 @@ namespace MC
 				}
 			}
 
-			// free memory
-			//delete[] floatTest;
-			//delete[] intTest;
 			delete[] triPoints;
 			delete[] indices;
 		}
@@ -201,7 +174,7 @@ namespace MC
 		Window<OptionsWindow> mWindow;
 		unique_ptr<Graphics> polygonGroup;
 
-		bool debug;
+		bool info;
 		float maxIsoValue;
 
 		size_t numCells;
@@ -219,6 +192,8 @@ namespace MC
 		cl::Context cont;
 		cl::CommandQueue queue;
 		cl::Program program;
+		cl::Kernel kernel;
+
 		int* triTableArray;
 
 		cl::Buffer bufferEdgeTable;
@@ -232,7 +207,7 @@ namespace MC
 			const TensorFieldGridBased<3, Scalar>* field = parameters.get<const TensorFieldGridBased<3, Scalar>*>("field");
 			const Grid<3>* grid = parameters.get<const Grid<3>*>("grid");
 			maxIsoValue = parameters.get<float>("max iso value");
-			debug = parameters.get<bool>("debug");
+			info = parameters.get<bool>("info");
 			
 
 			if(field == false)
@@ -292,6 +267,7 @@ namespace MC
 			}
 			debugLog() << "loading points finished" << endl;
 
+			// put the triTable into one-dimensional array
 			triTableArray = new int[256 * 16];
 			for(int i = 0; i < 256; ++i)
 			{
