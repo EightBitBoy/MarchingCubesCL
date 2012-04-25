@@ -68,7 +68,6 @@ namespace MC
 			MarchingCubes& mAlgo;
 			Slider mSlider;
 			
-
 			OptionsWindow(MainWindow& mainWindow, MarchingCubes& algo)
 				: mWindow(mainWindow, DockWindow::FFREE, "algorithm window"),
 				mLayout(mWindow.getWidgetHolder(), false),
@@ -199,6 +198,8 @@ namespace MC
 			int time = 0;
 			debugLog() << "cells: " << numCells << endl;
 			debugLog() << "points: " << numValues << endl;
+
+			debugLog() << "some index: " << grid->cell(1).index(2) << endl;
 
 			// load all scalar values into an array
 			values = new float[numValues];
